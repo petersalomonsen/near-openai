@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "edge-runtime": "^2.1.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3"
+  }
+}
