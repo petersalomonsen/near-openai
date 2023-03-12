@@ -18,5 +18,11 @@ export default async (request) => {
         })
     }).then(r => r.json());
 
-    return new Response(JSON.stringify(openairesponse));
+    return new Response(JSON.stringify(openairesponse), {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST",
+            "Content-Type": "application/json"
+        }
+    });
 };
