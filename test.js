@@ -1,28 +1,31 @@
 import { EdgeRuntime } from 'edge-runtime'
 import { readFile } from 'fs/promises';
-import { config } from 'dotenv';
+import { config } from 'dotenv';
 
 config();
 
-const initialCode = (await readFile('openai.js')).toString();
+const messages = [
+    { "role": "system", "content": `You are a helpful assistant ready to answer the big questions in life` },
+    { "role": "user", "content": `What is the meaning of life according to hitchhikers guide to the galaxy?` }
+];
 
-const runtime = new EdgeRuntime({ initialCode })
+const openaicode = (await readFile(new URL('./api.bundle.js', import.meta.url))).toString();
+const runtime = new EdgeRuntime({
+    initialCode: openaicode,
+    extend: (context) =>
+        Object.assign(context, {
+            process: { env: { OPENAI_TOKEN: process.env.OPENAI_TOKEN } },
+        }),
+});
 
-const response = await runtime.dispatchFetch(
-    'http://blabla.com', {
-        method: 'POST',
-        body: JSON.stringify({messages: [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Who won the world series in 2020?"},
-            {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-            {"role": "user", "content": "Where was it played?"}
-        ]})
-    }
-)
+const response = await runtime.dispatchFetch('https://example.com', {
+    method: 'POST',
+    body: JSON.stringify({
+        transaction_hash: '5sQNWgaoVptT4U73qsLr5YaimKmDf8mLUGDHsm9nBurf',
+        sender_account_id: 'jsinrustnft.near',
+        messages: messages
+    })
+});
 
-// If your code logic performs asynchronous tasks, you should await them.
-// https://developer.mozilla.org/en-US/docs/Web/API/ExtendableEvent/waitUntil
-await response.waitUntil()
-
-// `response` is Web standard, you can use any of it's methods
-console.log(await response.text());
+await response.waitUntil();
+console.log('response', await response.text());

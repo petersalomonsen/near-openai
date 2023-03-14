@@ -1,12 +1,15 @@
 {
   "type": "module",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "bundle": "rollup -c rollup-config.js"
   },
   "dependencies": {
-    "edge-runtime": "^2.1.2"
+    "to-readable-stream": "^4.0.0"
   },
   "devDependencies": {
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "edge-runtime": "^2.1.2",
+    "rollup": "^3.19.1"
   }
 }
