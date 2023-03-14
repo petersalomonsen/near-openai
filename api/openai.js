@@ -5,7 +5,7 @@ export const config = {
 };
 
 export default async (request) => {
-    const input = JSON.parse(new TextDecoder().decode((await request.body.getReader().read()).value));
+    const input = await request.json();
 
     const transactionResult = await fetch('https://rpc.mainnet.near.org', {
         method: 'POST',
