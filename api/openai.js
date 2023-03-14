@@ -23,7 +23,7 @@ export default async (request) => {
     }).then(r => r.json());
 
     const messagesStringified = JSON.stringify(input.messages);
-    const expected_deposit = (BigInt(messagesStringified.length) * 1000000000000000000000n).toString();
+    const expected_deposit = (BigInt(messagesStringified.length) * 10000000000000000000n).toString();
 
     const expected_message_hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(messagesStringified))))
         .map((b) => b.toString(16).padStart(2, "0"))
