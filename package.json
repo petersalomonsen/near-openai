@@ -5,6 +5,7 @@
     "bundle": "rollup -c rollup-config.js"
   },
   "dependencies": {
+    "discord.js": "^14.9.0",
     "to-readable-stream": "^4.0.0"
   },
   "devDependencies": {
