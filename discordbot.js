@@ -1,4 +1,5 @@
 import Discord, { GatewayIntentBits } from 'discord.js';
+import { ask_ai } from './client/nearopenaiclient.js';
 
 const client = new Discord.Client({
     intents: [
@@ -7,22 +8,15 @@ const client = new Discord.Client({
         GatewayIntentBits.MessageContent
     ]
 });
-const prefix = '!'; // Change this to your desired prefix
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('messageCreate', msg => {
-    console.log(msg.content);
+client.on('messageCreate', async msg => {
     if (msg.author.bot) return;
-    if (msg.content.startsWith(prefix)) {
-        const args = msg.content.slice(prefix.length).trim().split(/ +/);
-        const command = args.shift().toLowerCase();
-
-        if (command === 'hello') {
-            msg.reply('Hello, World!');
-        }
+    if (msg.mentions.users.find(user => user.username == 'nearopenai')) {
+        msg.reply(await ask_ai([{ role: 'user', content: msg.content }]));
     }
 });
 
