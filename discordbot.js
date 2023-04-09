@@ -16,6 +16,7 @@ client.on('ready', () => {
 client.on('messageCreate', async msg => {
     if (msg.author.bot) return;
     if (msg.mentions.users.find(user => user.username == 'nearopenai')) {
+        console.log('asking AI about message', msg.content);
         msg.reply(await ask_ai([{ role: 'user', content: msg.content }]));
     }
 });
