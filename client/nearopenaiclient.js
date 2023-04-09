@@ -24,19 +24,23 @@ export async function ask_ai(messages) {
     const message_hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(messagesStringified))))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-    const result = await account.functionCall({
-        contractId: 'jsinrust.near', methodName: 'ask_ai', args: {
-            message_hash
-        }, attachedDeposit: deposit
-    });
+    try {
+        const result = await account.functionCall({
+            contractId: 'jsinrust.near', methodName: 'ask_ai', args: {
+                message_hash
+            }, attachedDeposit: deposit
+        });
 
-    const airesponse = await fetch('https://near-openai.vercel.app/api/openai', {
-        method: 'POST',
-        body: JSON.stringify({
-            transaction_hash: result.transaction.hash,
-            sender_account_id: accountId,
-            messages: messages
-        })
-    }).then(r => r.json());
-    return airesponse.choices[0].message.content;
+        const airesponse = await fetch('https://near-openai.vercel.app/api/openai', {
+            method: 'POST',
+            body: JSON.stringify({
+                transaction_hash: result.transaction.hash,
+                sender_account_id: accountId,
+                messages: messages
+            })
+        }).then(r => r.json());
+        return airesponse.choices[0].message.content;
+    } catch (e) {
+        return `I'm not able to respond properly. It might be because I'm out of funds ( see my available balance here: https://wallet.near.org/profile/botai.near ), and in that case just send some NEAR to botai.near. Here's my error messge: ${e.message}`;
+    }
 }
