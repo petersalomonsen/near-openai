@@ -1,8 +1,6 @@
 import { EdgeRuntime } from 'edge-runtime'
 import { readFile } from 'fs/promises';
-import { config } from 'dotenv';
-
-config();
+import { create_ask_ai_request_body } from './client/nearopenaiclient.js';
 
 const messages = [
     { "role": "system", "content": `You are a helpful assistant ready to answer the big questions in life` },
@@ -20,11 +18,7 @@ const runtime = new EdgeRuntime({
 
 const response = await runtime.dispatchFetch('https://example.com', {
     method: 'POST',
-    body: JSON.stringify({
-        transaction_hash: '5sQNWgaoVptT4U73qsLr5YaimKmDf8mLUGDHsm9nBurf',
-        sender_account_id: 'jsinrustnft.near',
-        messages: messages
-    })
+    body: await create_ask_ai_request_body(messages)
 });
 
 await response.waitUntil();

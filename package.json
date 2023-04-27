@@ -2,13 +2,16 @@
   "type": "module",
   "scripts": {
     "test": "node test.js",
-    "bundle": "rollup -c rollup-config.js"
+    "bundle": "rollup -c rollup-config.js",
+    "client": "node client.js",
+    "discordbot": "env $(cat .env |xargs) node discordbot.js"
   },
   "dependencies": {
+    "discord.js": "^14.9.0",
+    "near-api-js": "^2.0.4",
     "to-readable-stream": "^4.0.0"
   },
   "devDependencies": {
-    "dotenv": "^16.0.3",
     "edge-runtime": "^2.1.2",
     "rollup": "^3.19.1"
   }
