@@ -3,7 +3,7 @@ import nearApi, { connect, keyStores } from 'near-api-js';
 import crypto from 'crypto';
 
 const keyStore = new keyStores.UnencryptedFileSystemKeyStore(`${homedir()}/.near-credentials`);
-const networkId = 'testnet';
+const networkId = 'mainnet';
 const config = {
     keyStore, // instance of UnencryptedFileSystemKeyStore
     networkId,
