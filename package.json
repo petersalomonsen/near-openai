@@ -4,7 +4,8 @@
     "test": "node test.js",
     "bundle": "rollup -c rollup-config.js",
     "client": "node client.js",
-    "discordbot": "env $(cat .env |xargs) node discordbot.js"
+    "discordbot": "env $(cat .env |xargs) node discordbot.js",
+    "package:boswidget": "cd boswidget && rollup -c rollup.config.js"
   },
   "dependencies": {
     "discord.js": "^14.9.0",
@@ -13,6 +14,7 @@
   },
   "devDependencies": {
     "edge-runtime": "^2.1.2",
-    "rollup": "^3.19.1"
+    "rollup": "^3.19.1",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }
