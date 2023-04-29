@@ -38,6 +38,19 @@ export default async (request) => {
             )
         }).then(r => r.json());
 
+        if(transactionResult.error) {
+            return new Response(JSON.stringify({
+                error: transactionResult.error
+            }), {
+                status: 500,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST",
+                    "Content-Type": "application/json"
+                }
+            });
+        }
+
         const messagesStringified = JSON.stringify(input.messages);
         const expected_deposit = (BigInt(messagesStringified.length) * 10000000000000000000n).toString();
 
