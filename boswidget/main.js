@@ -33,7 +33,7 @@ export async function create_ask_ai_request_body(messages) {
     const accountId = account.accountId;
 
     const messagesStringified = JSON.stringify(messages);
-    const deposit = BigInt(messagesStringified.length) * 10000000000000000000n;
+    const deposit = 50_00000_00000_00000_00000n;
 
     const message_hash = sha256(messagesStringified);
 

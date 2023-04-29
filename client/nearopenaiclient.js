@@ -20,7 +20,7 @@ export async function create_ask_ai_request_body(messages) {
     const accountId = account.accountId;
 
     const messagesStringified = JSON.stringify(messages);
-    const deposit = BigInt(messagesStringified.length) * 10000000000000000000n;
+    const deposit = 50_00000_00000_00000_00000n;
 
     const message_hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(messagesStringified))))
         .map((b) => b.toString(16).padStart(2, "0"))
