@@ -1,5 +1,7 @@
 const secretKey = Storage.privateGet("secretKey");
 
+State.init({airesponse: ''});
+
 let iframeMessage = {
     command: 'createaccount'
 };
@@ -14,9 +16,14 @@ function handleMessage(msg) {
         case 'accountcreated':
             Storage.privateSet('secretKey', msg.secretKey);
             break;
+        case 'airesponse':
+            State.update({airesponse: msg.airesponse});
+            break;
     }
 }
 
 return <>
     <iframe message={iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{width: '640px', height: '400px'}}></iframe>
+    <Markdown text={state.airesponse} />
+    <p><pre>{secretKey}</pre></p>
 </>;

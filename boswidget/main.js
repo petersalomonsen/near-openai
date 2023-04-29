@@ -77,14 +77,18 @@ export async function send_ask_ai_request(requestbody) {
         }).then(r => r.json());
         return airesponse.choices[0].message.content;
     } catch (e) {
-        return e.message;
+        return `Unfortunately, there was an error:
+
+\`\`\`${JSON.stringify(e, null, 1)}\`\`\``;
     }
 }
 
 window.onmessage = async (msg) => {
+    globalThis.parentOrigin = msg.origin;
+
     switch (msg.data.command) {
         case 'createaccount':
-            window.parent.postMessage({ command: 'accountcreated', secretKey: await createAccount() }, msg.origin);
+            window.parent.postMessage({ command: 'accountcreated', secretKey: await createAccount() }, globalThis.parentOrigin);
             break;
         case 'useaccount':
             useAccount(msg.data.secretKey);
@@ -94,7 +98,8 @@ window.onmessage = async (msg) => {
 
 document.getElementById('ask_ai_button').addEventListener('click', async () => {
     const requestbody = await create_ask_ai_request_body([{ role: 'user', content: document.getElementById('questiontextarea').value }]);
+    console.log(requestbody);
     const response = await send_ask_ai_request(requestbody);
     console.log(response);
-    document.getElementById('responsearea').innerHTML = response;
+    window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
 });
