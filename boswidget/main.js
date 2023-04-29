@@ -71,15 +71,25 @@ export async function create_ask_ai_request_body(messages) {
 
 export async function send_ask_ai_request(requestbody) {
     try {
-        const airesponse = await fetch('https://near-openai.vercel.app/api/openai', {
+        const airesponse = await fetch(
+            //'https://near-openai.vercel.app/api/openai',
+            'https://near-openai-git-boswidget-petersalomonsen.vercel.app/api/openai',
+            {
             method: 'POST',
             body: requestbody
         }).then(r => r.json());
+        if (airesponse.error) {
+            throw new Error(JSON.stringify(airesponse.error, null, 1));
+        }
         return airesponse.choices[0].message.content;
     } catch (e) {
+        console.log(e.message);
         return `Unfortunately, there was an error:
 
-\`\`\`${JSON.stringify(e, null, 1)}\`\`\``;
+\`\`\`
+${e.message}
+\`\`\`
+`;
     }
 }
 
