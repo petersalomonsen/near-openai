@@ -23,7 +23,7 @@ async function useAccount(secretKey) {
     const keypair = nearApi.utils.KeyPair.fromString(secretKey);
     const accountid = Buffer.from(keypair.publicKey.data).toString('hex');
     await keyStore.setKey(networkId, accountid, keypair);
-    document.getElementById('accountidspan').innerHTML = accountid;
+    return accountid;
 }
 
 export async function create_ask_ai_request_body(messages) {
@@ -96,20 +96,21 @@ ${e.message}
 window.onmessage = async (msg) => {
     globalThis.parentOrigin = msg.origin;
 
+    console.log('iframe got message', msg.data);
     switch (msg.data.command) {
         case 'createaccount':
             window.parent.postMessage({ command: 'accountcreated', secretKey: await createAccount() }, globalThis.parentOrigin);
             break;
         case 'useaccount':
-            useAccount(msg.data.secretKey);
+            window.parent.postMessage({ command: 'usingaccount', accountId: await useAccount(msg.data.secretKey) }, globalThis.parentOrigin);
+            break;
+        case 'ask_ai':
+            const response = await send_ask_ai_request(
+                await create_ask_ai_request_body([{ role: 'user', content: msg.data.aiquestion }])
+            );
+            window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
             break;
     }
 };
 
-document.getElementById('ask_ai_button').addEventListener('click', async () => {
-    const requestbody = await create_ask_ai_request_body([{ role: 'user', content: document.getElementById('questiontextarea').value }]);
-    console.log(requestbody);
-    const response = await send_ask_ai_request(requestbody);
-    console.log(response);
-    window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
-});
+console.log('iframe loaded');
