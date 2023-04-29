@@ -1,6 +1,5 @@
-const secretKey = Storage.privateGet("secretKey");
-
 State.init({
+    secretKey: Storage.privateGet("secretKey"),
     airesponse: '',
     aiquestion: '',
     accountId: '',
@@ -11,6 +10,7 @@ function handleMessage(msg) {
     switch (msg.command) {
         case 'accountcreated':
             Storage.privateSet('secretKey', msg.secretKey);
+            State.update({ accountId: msg.accountId, secretKey: msg.secretKey });
             break;
         case 'airesponse':
             State.update({ airesponse: msg.airesponse });
@@ -27,9 +27,9 @@ function ask_ai() {
 
 function init_iframe() {
     State.update({
-        iframeMessage: secretKey ? {
+        iframeMessage: state.secretKey ? {
             command: 'useaccount',
-            secretKey: secretKey,
+            secretKey: state.secretKey,
         } : {
             command: 'createaccount'
         }
@@ -39,12 +39,18 @@ function init_iframe() {
 
 const iframe = <iframe onLoad={init_iframe} message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '0px', height: '0px', border: 'none' }}></iframe>;
 
+const secretKeyToggle = state.showSecretKey ? <>
+            <button onClick={() => State.update({showSecretKey: false})}>Hide</button><pre>{state.secretKey}</pre>
+        </> :
+        <button onClick={() => State.update({showSecretKey: true})}>Show</button>
+
 return <>
-    <p>Using account {state.accountId}</p>
+    {iframe}
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
     <button onClick={ask_ai}>Ask AI</button>
     <Markdown text={state.airesponse} />
 
-    <p><pre>{secretKey}</pre></p>
-    {iframe}
+    <p></p>
+    <p>Spending account ID: <pre>{state.accountId}</pre></p>
+    <p>Spending account secret key: {secretKeyToggle}</p>
 </>;

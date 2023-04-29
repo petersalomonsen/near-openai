@@ -14,9 +14,9 @@ const config = {
 
 async function createAccount() {
     const keypair = nearApi.utils.KeyPairEd25519.fromRandom();
-    const accountid = Buffer.from(keypair.publicKey.data).toString('hex');
-    await keyStore.setKey(networkId, accountid, keypair);
-    return keypair.secretKey;
+    const accountId = Buffer.from(keypair.publicKey.data).toString('hex');
+    await keyStore.setKey(networkId, accountId, keypair);
+    return { secretKey: keypair.secretKey, accountId };
 }
 
 async function useAccount(secretKey) {
@@ -75,9 +75,9 @@ export async function send_ask_ai_request(requestbody) {
             //'https://near-openai.vercel.app/api/openai',
             'https://near-openai-git-boswidget-petersalomonsen.vercel.app/api/openai',
             {
-            method: 'POST',
-            body: requestbody
-        }).then(r => r.json());
+                method: 'POST',
+                body: requestbody
+            }).then(r => r.json());
         if (airesponse.error) {
             throw new Error(JSON.stringify(airesponse.error, null, 1));
         }
@@ -99,7 +99,8 @@ window.onmessage = async (msg) => {
     console.log('iframe got message', msg.data);
     switch (msg.data.command) {
         case 'createaccount':
-            window.parent.postMessage({ command: 'accountcreated', secretKey: await createAccount() }, globalThis.parentOrigin);
+            const { secretKey, accountId } = await createAccount();
+            window.parent.postMessage({ command: 'accountcreated', secretKey, accountId }, globalThis.parentOrigin);
             break;
         case 'useaccount':
             window.parent.postMessage({ command: 'usingaccount', accountId: await useAccount(msg.data.secretKey) }, globalThis.parentOrigin);
