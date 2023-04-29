@@ -37,10 +37,16 @@ function init_iframe() {
     console.log('init iframe');
 }
 
+function changeSecretKey(secretKey) {
+    State.update({secretKey});
+    init_iframe();
+}
+
 const iframe = <iframe onLoad={init_iframe} message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '0px', height: '0px', border: 'none' }}></iframe>;
 
 const secretKeyToggle = state.showSecretKey ? <>
-            <button onClick={() => State.update({showSecretKey: false})}>Hide</button><pre>{state.secretKey}</pre>
+            <button onClick={() => State.update({showSecretKey: false})}>Hide</button>
+            <input type="text" value={state.secretKey} onChange={e => changeSecretKey(e.target.value)}></input>
         </> :
         <button onClick={() => State.update({showSecretKey: true})}>Show</button>
 

@@ -3,6 +3,7 @@ import 'https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js';
 
 const networkId = 'mainnet';
 const keyStore = new nearApi.keyStores.InMemoryKeyStore();
+let account;
 const config = {
     keyStore, // instance of UnencryptedFileSystemKeyStore
     networkId,
@@ -12,24 +13,26 @@ const config = {
     explorerUrl: `https://explorer.${networkId}.near.org`
 };
 
+
 async function createAccount() {
     const keypair = nearApi.utils.KeyPairEd25519.fromRandom();
     const accountId = Buffer.from(keypair.publicKey.data).toString('hex');
     await keyStore.setKey(networkId, accountId, keypair);
+    const near = await nearApi.connect(config);
+    account = await near.account(accountId);
     return { secretKey: keypair.secretKey, accountId };
 }
 
 async function useAccount(secretKey) {
     const keypair = nearApi.utils.KeyPair.fromString(secretKey);
-    const accountid = Buffer.from(keypair.publicKey.data).toString('hex');
-    await keyStore.setKey(networkId, accountid, keypair);
-    return accountid;
+    const accountId = Buffer.from(keypair.publicKey.data).toString('hex');
+    await keyStore.setKey(networkId, accountId, keypair);
+    const near = await nearApi.connect(config);
+    account = await near.account(accountId);
+    return accountId;
 }
 
 export async function create_ask_ai_request_body(messages) {
-    const near = await nearApi.connect(config);
-
-    const account = await near.account((await keyStore.getAccounts(networkId))[0]);
     const accountId = account.accountId;
 
     const messagesStringified = JSON.stringify(messages);
