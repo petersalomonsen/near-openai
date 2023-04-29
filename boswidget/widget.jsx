@@ -18,5 +18,5 @@ function handleMessage(msg) {
 }
 
 return <>
-    <iframe message={iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI"></iframe>
+    <iframe message={iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{width: '640px', height: '400px'}}></iframe>
 </>;
