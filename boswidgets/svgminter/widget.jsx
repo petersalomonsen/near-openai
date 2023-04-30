@@ -4,7 +4,7 @@ Storage.privateGet(SECRET_KEY_STORAGE_KEY);
 State.init({
     secretKey: null,
     airesponse: '',
-    aiquestion: 'Smiley with different shades of red shading to yellow, black background and a random energic word as token id',
+    aiquestion: `A blue sky, and green fields`,
     accountId: '',
     iframeMessage: null
 });

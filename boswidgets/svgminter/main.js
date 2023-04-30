@@ -171,7 +171,7 @@ window.onmessage = async (msg) => {
             break;
         case 'ask_ai':
             const response = await create_and_send_ask_ai_request([
-                { role: 'user', content: `In the next message there will be a description that you should use to create 9x9 pixel art, and a word to be used as a token id. If the description is weak, then be creative.` },
+                { role: 'user', content: `In the next message there will be a description that you should use to create 9x9 pixel art, and as inspiration for a word to be used as a token id. If the description is weak, then be creative.` },
                 { role: 'user', content: msg.data.aiquestion },
                 {
                     role: 'user', content: `
