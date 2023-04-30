@@ -50,6 +50,8 @@ function handleMessage(msg) {
             console.log('ready');
             init_iframe();
             break;
+        case 'mint':
+            Near.call('jsinrustnft.near', 'nft_mint', msg.args, undefined, (1_000_00000_00000_00000_00000n).toString());
     }
 }
 
@@ -64,20 +66,25 @@ const secretKeyToggle = state.showSecretKey ? <>
 return <>
     <p>Create some image and text and mint your own NFT that you can list and trade on <a href="https://www.mintbase.xyz/contract/jsinrustnft.near/nfts/all/0" target="_blank">Mintbase</a></p>
 
-    <p>        
+    <p>
         <b>NOTE:</b> Each request to ChatGPT costs about 0.005 NEAR. Make sure the spending account below is funded, and you can also get full access to
         that account by using the secret key. Only you have the key to this account, so don't loose it.</p>
 
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
-    {state.progress ? <Progress.Root>
-        <Progress.Indicator state="indeterminate" />
-    </Progress.Root> : <button onClick={ask_ai}>Ask ChatGPT</button>}
+    {
+        state.progress ?
+            <Progress.Root>
+                <Progress.Indicator state="indeterminate" />
+            </Progress.Root> :
+            <button onClick={ask_ai}>Ask ChatGPT</button>
+    }
+    {state.error ? <div style={{ color: 'red' }}>{state.error}</div> : ''}
 
     <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
         {iframe}
     </div>
 
-    {state.error ? <div style={{ color: 'red'}}>{state.error}</div> : ''}
+
     <p><br /></p>
 
     <p></p>

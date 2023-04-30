@@ -100,23 +100,22 @@ const mintButton = document.getElementById('mint_button');
 let colors_array;
 
 mintButton.addEventListener('click', async () => {
-    mintButton.disabled = true;
-    document.getElementById('mintresultview').innerHTML = 'Please wait while executing transaction';
-    const contract = new nearApi.Contract(account, nftContractId, {
-        changeMethods: ['nft_mint']
-    });
-    try {
-        const result = await contract.nft_mint({
+    const owner_input = document.getElementById('owner_input');
+    const token_owner_id = document.getElementById('owner_input').value;
+    if (!token_owner_id) {
+        owner_input.classList.add('missingowner');
+        return;
+    }
+    owner_input.classList.remove('missingowner');
+
+    window.parent.postMessage({
+        command: 'mint', args: {
             token_id: document.getElementById('token_id_input').value,
-            token_owner_id: account.accountId,
+            token_owner_id,
             font_size: document.getElementById('font_size_input').value,
             colors: colors_array
-        }, undefined, utils.format.parseNearAmount("0.1"));
-        document.getElementById('mintresultview').innerHTML = JSON.stringify(result, null, 1);
-    } catch (e) {
-        document.getElementById('mintresultview').innerHTML = e.toString();
-    }
-    mintButton.disabled = false;
+        }
+    }, globalThis.parentOrigin);
 });
 
 const previewButton = document.getElementById('preview_button');
@@ -172,10 +171,11 @@ window.onmessage = async (msg) => {
             break;
         case 'ask_ai':
             const response = await create_and_send_ask_ai_request([
-                { role: 'user', content: `In the next message I will describe what I want for a 9x9 pixel art image token, and a word to be used as a token id` },
+                { role: 'user', content: `In the next message there will be a description that you should use to create 9x9 pixel art, and a word to be used as a token id. If the description is weak, then be creative.` },
                 { role: 'user', content: msg.data.aiquestion },
-                { role: 'user', content: `
-                Give me only a json result that I can parse directly, and no other surrounding context. The json should contain a property called image which is a 9x9 array with string of CSS color codes. The other property should be named token_id and contain the word for the token id.` },
+                {
+                    role: 'user', content: `
+                Give me only a json result that I can parse directly, and no other surrounding context. The json should contain a property called image which is a 9x9 array with string of CSS color codes representing the pixel art. The other property should be named token_id and contain the word for the token id.` },
             ]);
 
             let error;
