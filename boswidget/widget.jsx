@@ -1,5 +1,8 @@
+const SECRET_KEY_STORAGE_KEY = 'secretKey';
+Storage.privateGet(SECRET_KEY_STORAGE_KEY);
+
 State.init({
-    secretKey: Storage.privateGet("secretKey"),
+    secretKey: null,
     airesponse: '',
     aiquestion: '',
     accountId: '',
@@ -7,10 +10,13 @@ State.init({
 });
 
 function init_iframe() {
+    const secretKey = Storage.privateGet(SECRET_KEY_STORAGE_KEY);
+
     State.update({
-        iframeMessage: state.secretKey ? {
+        secretKey,
+        iframeMessage: secretKey ? {
             command: 'useaccount',
-            secretKey: state.secretKey,
+            secretKey: secretKey,
         } : {
             command: 'createaccount'
         }
@@ -23,14 +29,15 @@ function ask_ai() {
 }
 
 function changeSecretKey(secretKey) {
-    State.update({secretKey});
+    State.update({ secretKey });
+    Storage.privateSet(SECRET_KEY_STORAGE_KEY, secretKey);
     init_iframe();
 }
 
 function handleMessage(msg) {
     switch (msg.command) {
         case 'accountcreated':
-            Storage.privateSet('secretKey', msg.secretKey);
+            Storage.privateSet(SECRET_KEY_STORAGE_KEY, msg.secretKey);
             State.update({ accountId: msg.accountId, secretKey: msg.secretKey });
             break;
         case 'airesponse':
@@ -40,17 +47,19 @@ function handleMessage(msg) {
             State.update({ accountId: msg.accountId });
             break;
         case 'ready':
+            console.log('ready');
             init_iframe();
+            break;
     }
 }
 
 const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '0px', height: '0px', border: 'none' }}></iframe>;
 
 const secretKeyToggle = state.showSecretKey ? <>
-            <button onClick={() => State.update({showSecretKey: false})}>Hide</button>
-            <input type="text" value={state.secretKey} onChange={e => changeSecretKey(e.target.value)}></input>
-        </> :
-        <button onClick={() => State.update({showSecretKey: true})}>Show</button>
+    <button onClick={() => State.update({ showSecretKey: false })}>Hide</button>
+    <input type="text" value={state.secretKey} onChange={e => changeSecretKey(e.target.value)}></input>
+</> :
+    <button onClick={() => State.update({ showSecretKey: true })}>Show</button>
 
 return <>
     {iframe}
