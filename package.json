@@ -5,7 +5,9 @@
     "bundle": "rollup -c rollup-config.js",
     "client": "node client.js",
     "discordbot": "env $(cat .env |xargs) node discordbot.js",
-    "package:boswidget": "cd boswidget && rollup -c rollup.config.js"
+    "package:askchatgpt": "cd boswidgets/askchatgpt && rollup -c rollup.config.js",
+    "package:svgminter": "cd boswidgets/svgminter && rollup -c rollup.config.js"
+
   },
   "dependencies": {
     "discord.js": "^14.9.0",

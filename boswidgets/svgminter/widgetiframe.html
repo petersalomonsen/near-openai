@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        input {
+            padding: 5px;
+            border: #55c solid 4px;
+            background-color: white;
+            color: black;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border: #114 solid 4px;
+            background-color: white;
+            color: black;
+        }
+
+        button:hover {
+            background-color: #555;
+            color: white;
+        }
+
+
+        #previewresultview {
+            width: 500px;
+            max-width: 100%;
+        }
+
+        a:visited, a {
+            color: white;
+        }
+
+        #contractidspan {
+            background-color: white;
+            color: black;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Token id: <input type="text" id="token_id_input" value="22" />
+        &nbsp; Font size: <input type="number" id="font_size_input" value="3" min="1" max="4" />
+    </p>
+    <button id="mint_button">Mint</button>
+    <button id="preview_button">Preview</button>
+    </p>
+    <div>
+        <pre id="mintresultview"></pre>
+    </div>
+    <input type="text" id="color_input" style="width: 50px;position: absolute; display: none; z-index: 1000;" />
+    <div id="previewresultview">
+
+    </div>
+</body>
+<script type="module" src="main.js"></script>
+</html>
