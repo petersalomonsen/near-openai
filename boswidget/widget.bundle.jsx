@@ -24,7 +24,7 @@ function init_iframe() {
 }
 
 function ask_ai() {
-    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion } });
+    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion, ts: new Date().getTime() }, progress: true });
     console.log('state updated', state.iframeMessage);
 }
 
@@ -41,7 +41,7 @@ function handleMessage(msg) {
             State.update({ accountId: msg.accountId, secretKey: msg.secretKey });
             break;
         case 'airesponse':
-            State.update({ airesponse: msg.airesponse });
+            State.update({ airesponse: msg.airesponse, progress: false });
             break;
         case 'usingaccount':
             State.update({ accountId: msg.accountId });
@@ -64,7 +64,9 @@ const secretKeyToggle = state.showSecretKey ? <>
 return <>
     {iframe}
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
-    <button onClick={ask_ai}>Ask AI</button>
+    {state.progress ?  <Progress.Root>
+        <Progress.Indicator state="indeterminate"/>
+    </Progress.Root> : <button onClick={ask_ai}>Ask AI</button>}
     <Markdown text={state.airesponse} />
 
     <p></p>
