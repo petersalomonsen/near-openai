@@ -76,8 +76,7 @@ async function create_and_send_ask_ai_request(messages) {
     try {
         const requestbody = await create_ask_ai_request_body(messages);
         const airesponse = await fetch(
-            //'https://near-openai.vercel.app/api/openai',
-            'https://near-openai-git-boswidget-petersalomonsen.vercel.app/api/openai',
+            'https://near-openai.vercel.app/api/openai',
             {
                 method: 'POST',
                 body: requestbody
