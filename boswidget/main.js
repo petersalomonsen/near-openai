@@ -117,4 +117,4 @@ window.onmessage = async (msg) => {
     }
 };
 
-console.log('iframe loaded');
+window.parent.postMessage({ command: 'ready' }, '*');

@@ -6,6 +6,27 @@ State.init({
     iframeMessage: null
 });
 
+function init_iframe() {
+    State.update({
+        iframeMessage: state.secretKey ? {
+            command: 'useaccount',
+            secretKey: state.secretKey,
+        } : {
+            command: 'createaccount'
+        }
+    });
+}
+
+function ask_ai() {
+    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion } });
+    console.log('state updated', state.iframeMessage);
+}
+
+function changeSecretKey(secretKey) {
+    State.update({secretKey});
+    init_iframe();
+}
+
 function handleMessage(msg) {
     switch (msg.command) {
         case 'accountcreated':
@@ -17,32 +38,13 @@ function handleMessage(msg) {
             break;
         case 'usingaccount':
             State.update({ accountId: msg.accountId });
+            break;
+        case 'ready':
+            init_iframe();
     }
 }
 
-function ask_ai() {
-    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion } });
-    console.log('state updated', state.iframeMessage);
-}
-
-function init_iframe() {
-    State.update({
-        iframeMessage: state.secretKey ? {
-            command: 'useaccount',
-            secretKey: state.secretKey,
-        } : {
-            command: 'createaccount'
-        }
-    });
-    console.log('init iframe');
-}
-
-function changeSecretKey(secretKey) {
-    State.update({secretKey});
-    init_iframe();
-}
-
-const iframe = <iframe onLoad={init_iframe} message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '0px', height: '0px', border: 'none' }}></iframe>;
+const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '0px', height: '0px', border: 'none' }}></iframe>;
 
 const secretKeyToggle = state.showSecretKey ? <>
             <button onClick={() => State.update({showSecretKey: false})}>Hide</button>
