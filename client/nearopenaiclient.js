@@ -20,7 +20,7 @@ export async function create_ask_ai_request_body(messages) {
     const accountId = account.accountId;
 
     const messagesStringified = JSON.stringify(messages);
-    const deposit = BigInt(messagesStringified.length) * 10000000000000000000n;
+    const deposit = 50_00000_00000_00000_00000n;
 
     const message_hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(messagesStringified))))
         .map((b) => b.toString(16).padStart(2, "0"))
@@ -58,12 +58,14 @@ export async function create_ask_ai_request_body(messages) {
 
 export async function ask_ai(messages) {
     try {
+        const requestbody =  await create_ask_ai_request_body(messages);
         const airesponse = await fetch('https://near-openai.vercel.app/api/openai', {
             method: 'POST',
-            body: await create_ask_ai_request_body(messages)
+            body: requestbody
         }).then(r => r.json());
         return airesponse.choices[0].message.content;
     } catch (e) {
+        const accountId = process.env.NEAR_ACCOUNT_ID;
         return `I'm not able to respond properly. It might be because I'm out of funds ( see my available balance here: ${config.walletUrl}/profile/${accountId} ), and in that case just send some NEAR to ${accountId}. Here's my error messge: ${e.message}`;    
     }
 }
