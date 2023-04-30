@@ -78,7 +78,9 @@ return <>
             </Progress.Root> :
             <button onClick={ask_ai}>Ask ChatGPT</button>
     }
-    {state.error ? <div style={{ color: 'red' }}>{state.error}</div> : ''}
+    {state.error ? <div style={{ color: 'red', backgroundColor: '#f8f8f8' }}>
+        <Markdown text={state.error} />
+    </div> : ''}
 
     <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
         {iframe}

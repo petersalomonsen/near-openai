@@ -45,7 +45,11 @@ async function create_ask_ai_request_body(messages) {
     const gas = '30000000000000';
     const publicKey = await account.connection.signer.getPublicKey(account.accountId, account.connection.networkId);
 
-    const accessKey = (await account.findAccessKey()).accessKey;
+    const findAccessKeyResult = await account.findAccessKey();
+    if (!findAccessKeyResult) {
+        throw new Error(`Account has no funds. From your wallet, send a small amount to ${account.accountId}`)
+    }
+    const accessKey = findAccessKeyResult.accessKey;
 
     const nonce = ++accessKey.nonce;
     const recentBlockHash = nearApi.utils.serialize.base_decode(
@@ -87,8 +91,7 @@ async function create_and_send_ask_ai_request(messages) {
         return airesponse.choices[0].message.content;
     } catch (e) {
         console.log(e.message);
-        return `Unfortunately, there was an error:
-
+        return `
 \`\`\`
 ${e.message}
 \`\`\`
@@ -185,7 +188,12 @@ window.onmessage = async (msg) => {
                 document.getElementById('token_id_input').value = responseObj.token_id;
                 previewButton.click();
             } catch (e) {
-                error = e.message;
+                error = `Error: ${e.message}
+                
+Here's the response:
+
+${response}
+                `;
             }
             window.parent.postMessage({ command: 'airesponse', airesponse: response, error }, globalThis.parentOrigin);
             break;
