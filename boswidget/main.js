@@ -32,7 +32,7 @@ async function useAccount(secretKey) {
     return accountId;
 }
 
-export async function create_ask_ai_request_body(messages) {
+async function create_ask_ai_request_body(messages) {
     const accountId = account.accountId;
 
     const messagesStringified = JSON.stringify(messages);
@@ -46,7 +46,7 @@ export async function create_ask_ai_request_body(messages) {
     const publicKey = await account.connection.signer.getPublicKey(account.accountId, account.connection.networkId);
 
     const accessKey = (await account.findAccessKey()).accessKey;
-    console.log(accessKey);
+
     const nonce = ++accessKey.nonce;
     const recentBlockHash = nearApi.utils.serialize.base_decode(
         accessKey.block_hash
@@ -72,8 +72,9 @@ export async function create_ask_ai_request_body(messages) {
     });
 }
 
-export async function send_ask_ai_request(requestbody) {
+async function create_and_send_ask_ai_request(messages) {
     try {
+        const requestbody = await create_ask_ai_request_body(messages);
         const airesponse = await fetch(
             //'https://near-openai.vercel.app/api/openai',
             'https://near-openai-git-boswidget-petersalomonsen.vercel.app/api/openai',
@@ -109,9 +110,7 @@ window.onmessage = async (msg) => {
             window.parent.postMessage({ command: 'usingaccount', accountId: await useAccount(msg.data.secretKey) }, globalThis.parentOrigin);
             break;
         case 'ask_ai':
-            const response = await send_ask_ai_request(
-                await create_ask_ai_request_body([{ role: 'user', content: msg.data.aiquestion }])
-            );
+            const response = await create_and_send_ask_ai_request([{ role: 'user', content: msg.data.aiquestion }]);            
             window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
             break;
     }

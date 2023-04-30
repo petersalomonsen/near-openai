@@ -62,12 +62,19 @@ const secretKeyToggle = state.showSecretKey ? <>
     <button onClick={() => State.update({ showSecretKey: true })}>Show</button>
 
 return <>
+    <p><b>NOTE:</b> Each request costs about 0.005 NEAR. Make sure the spending account below is funded, and you can also get full access to
+        that account by using the secret key. Only you have the key to this account, so don't loose it.</p>
     {iframe}
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
-    {state.progress ?  <Progress.Root>
-        <Progress.Indicator state="indeterminate"/>
-    </Progress.Root> : <button onClick={ask_ai}>Ask AI</button>}
-    <Markdown text={state.airesponse} />
+    {state.progress ? <Progress.Root>
+        <Progress.Indicator state="indeterminate" />
+    </Progress.Root> : <button onClick={ask_ai}>Ask ChatGPT</button>}
+
+    <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
+        <Markdown text={state.airesponse} />
+    </div>
+
+    <p><br /></p>
 
     <p></p>
     <p>Spending account ID: <pre>{state.accountId}</pre></p>
