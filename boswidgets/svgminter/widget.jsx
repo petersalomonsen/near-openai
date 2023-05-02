@@ -51,7 +51,12 @@ function handleMessage(msg) {
             init_iframe();
             break;
         case 'mint':
-            Near.call('jsinrustnft.near', 'nft_mint', msg.args, undefined, (1_000_00000_00000_00000_00000n).toString());
+            Near.call('jsinrustnft.near', 'nft_mint',
+                Object.assign({}, msg.args, {
+                    title: msg.args.token_id,
+                    description: state.aiquestion
+                }),
+                undefined, (1_000_00000_00000_00000_00000n).toString());
     }
 }
 
