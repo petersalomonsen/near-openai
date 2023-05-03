@@ -6,7 +6,8 @@
     "client": "node client.js",
     "discordbot": "env $(cat .env |xargs) node discordbot.js",
     "package:askchatgpt": "cd boswidgets/askchatgpt && rollup -c rollup.config.js",
-    "package:svgminter": "cd boswidgets/svgminter && rollup -c rollup.config.js"
+    "package:svgminter": "cd boswidgets/svgminter && rollup -c rollup.config.js",
+    "package:groovemaker": "cd boswidgets/groovemaker && rollup -c rollup.config.js"
 
   },
   "dependencies": {
