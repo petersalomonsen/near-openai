@@ -105,17 +105,49 @@ async function rendermusic() {
     const worker = new Worker(new URL('renderworker.js', import.meta.url));
 
     const bpm = 120;
+    const patternBeats = 4;
+    const patternLength = patternBeats * 4;
     const sampleRate = 44100;
-    const durationMillis = 4 * 60000 / bpm;
+    const durationMillis = patternBeats * 60000 / bpm;
     const durationFrames = durationMillis * sampleRate / 1000;
+
+    const channelinstrmap = [
+        'bell',
+        'bass',
+        'pad1',
+        'pad2',
+        'pad3',
+        'kick',
+        'snare',
+        'lead',
+        'hihat',
+    ];
+    const patterns = {
+        bass: [
+            32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30        ],
+        kick: [
+            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0
+        ],
+        snare: [
+            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0
+        ]
+    };
+    const patternsArray = new Array((channelinstrmap.length + 1) * patternLength);
+    patternsArray.fill(0);
+    channelinstrmap.forEach((instr, instrIndex) => {
+        if (patterns[instr]) {
+            patterns[instr].forEach((v, ndx) => patternsArray[(instrIndex + 1) * patternLength + ndx] = v);
+        }
+    });
 
     const { leftbuffer, rightbuffer } = await new Promise(async resolve => {
         worker.postMessage({
             wasm: wasmBytes, samplerate: sampleRate,
             songduration: durationMillis,
             bpm,
-            patterns: [64, , 72, , 64, , 72, ,],
-            numInstruments: 6
+            patternLength,
+            patterns: patternsArray,
+            numInstruments: channelinstrmap.length
         });
         worker.onmessage = msg => {
             if (msg.data.leftbuffer) {
@@ -126,18 +158,19 @@ async function rendermusic() {
         }
     });
 
-    document.getElementById('playbutton').addEventListener('click', () => {
+    const playbutton = document.getElementById('playbutton');
+    playbutton.addEventListener('click', () => {
         const audioCtx = new AudioContext();
         const audioBuf = audioCtx.createBuffer(2, durationFrames, sampleRate);
         audioBuf.getChannelData(0).set(new Float32Array(leftbuffer));
         audioBuf.getChannelData(1).set(new Float32Array(rightbuffer));
         const audioBufSrc = audioCtx.createBufferSource();
         audioBufSrc.buffer = audioBuf;
-    
+
         audioBufSrc.connect(audioCtx.destination);
         audioBufSrc.loop = true;
         audioBufSrc.start(0);
-    });    
+    });
 }
 
 
