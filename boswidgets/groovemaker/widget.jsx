@@ -64,7 +64,7 @@ const secretKeyToggle = state.showSecretKey ? <>
 return <>
     <p><b>NOTE:</b> Each request costs about 0.005 NEAR. Make sure the spending account below is funded, and you can also get full access to
         that account by using the secret key. Only you have the key to this account, so don't loose it.</p>
-    {iframe}
+    
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
     {state.progress ? <Progress.Root>
         <Progress.Indicator state="indeterminate" />
@@ -74,6 +74,7 @@ return <>
         <Markdown text={state.airesponse} />
     </div>
 
+    {iframe}
     <p><br /></p>
 
     <p></p>

@@ -123,6 +123,7 @@ async function rendermusic() {
         'hihat',
     ];
     const patterns = {
+        bell: [56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0],        
         bass: [
             32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30        ],
         kick: [
@@ -130,6 +131,9 @@ async function rendermusic() {
         ],
         snare: [
             0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0
+        ],
+        hihat: [
+            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0
         ]
     };
     const patternsArray = new Array((channelinstrmap.length + 1) * patternLength);
@@ -159,8 +163,14 @@ async function rendermusic() {
     });
 
     const playbutton = document.getElementById('playbutton');
+    let audioCtx;
     playbutton.addEventListener('click', () => {
-        const audioCtx = new AudioContext();
+        if (audioCtx) {
+            audioCtx.close();
+            audioCtx = null;
+            return;
+        }
+        audioCtx = new AudioContext();
         const audioBuf = audioCtx.createBuffer(2, durationFrames, sampleRate);
         audioBuf.getChannelData(0).set(new Float32Array(leftbuffer));
         audioBuf.getChannelData(1).set(new Float32Array(rightbuffer));
