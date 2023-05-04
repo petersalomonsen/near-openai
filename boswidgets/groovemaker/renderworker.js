@@ -9,89 +9,48 @@ onmessage = async (msg) => {
             });
         const wasmInstance = (await wasmInstancePromise).instance.exports;
 
-        const patternschedule = msg.data.patternschedule;
-        if (patternschedule) {
-            for (let n = 0; n < patternschedule.length; n++) {
-                wasmInstance.setMidiPartSchedule(n, patternschedule[n].patternindex, patternschedule[n].starttime);
-            }
-        }
+        const patternsptr = wasmInstance.allocatePatterns(4);
+        const patternsbuf = new Uint8Array(wasmInstance.memory.buffer, patternsptr, msg.data.numInstruments * 16);
+        patternsbuf.set(msg.data.patterns);
+        const instrpatternlistsptr = wasmInstance.allocateInstrumentPatternList(1, msg.data.numInstruments);
+        wasmInstance.setBPM(msg.data.bpm);
+
         const durationMillis = msg.data.songduration;
 
         const SAMPLE_FRAMES = 128;
         const durationFrames = durationMillis * sampleRate / 1000;
 
         const samplebuffer = wasmInstance.allocateSampleBuffer ? wasmInstance.allocateSampleBuffer(SAMPLE_FRAMES) : wasmInstance.samplebuffer;
-        const leftbuffer = new Float32Array(wasmInstance.memory.buffer,
+        const wasmleftbuffer = new Float32Array(wasmInstance.memory.buffer,
             samplebuffer,
             SAMPLE_FRAMES);
-        const rightbuffer = new Float32Array(wasmInstance.memory.buffer,
+        const wasmrightbuffer = new Float32Array(wasmInstance.memory.buffer,
             samplebuffer + (SAMPLE_FRAMES * 4),
             SAMPLE_FRAMES);
 
-        const numbuffers = 100;
-        const bitDepth = 32;
-        const numChannels = 2;
-
-        var bytesPerSample = bitDepth / 8
-        var blockAlign = numChannels * bytesPerSample
-
-        const chunklength = numChannels * bytesPerSample * (durationMillis * 0.001 * sampleRate + numbuffers * SAMPLE_FRAMES);
-
-        var buffer = new ArrayBuffer(44 + chunklength);
-        var view = new DataView(buffer);
-        function writeString(view, offset, string) {
-            for (var i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i))
-            }
-        }
-        /* RIFF identifier */
-        writeString(view, 0, 'RIFF')
-        /* RIFF chunk length */
-        view.setUint32(4, 36 + chunklength, true)
-        /* RIFF type */
-        writeString(view, 8, 'WAVE')
-        /* format chunk identifier */
-        writeString(view, 12, 'fmt ')
-        /* format chunk length */
-        view.setUint32(16, 16, true)
-        /* sample format (raw) */
-        view.setUint16(20, 3, true)
-        /* channel count */
-        view.setUint16(22, numChannels, true)
-        /* sample rate */
-        view.setUint32(24, sampleRate, true)
-        /* byte rate (sample rate * block align) */
-        view.setUint32(28, sampleRate * blockAlign, true)
-        /* block align (channel count * bytes per sample) */
-        view.setUint16(32, blockAlign, true)
-        /* bits per sample */
-        view.setUint16(34, bitDepth, true)
-        /* data chunk identifier */
-        writeString(view, 36, 'data')
-        /* data chunk length */
-        view.setUint32(40, chunklength, true)
-
-        let offset = 44;
         let framepos = 0;
+        const leftbuffer = new ArrayBuffer(durationFrames * 4);
+        const leftview = new DataView(leftbuffer);
+        const rightbuffer = new ArrayBuffer(durationFrames * 4);
+        const rightview = new DataView(rightbuffer);
+
+        const isLittleEndian = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+
         while (framepos < durationFrames) {
-            for (let b = 0; b < numbuffers; b++) {
-                wasmInstance.playEventsAndFillSampleBuffer != undefined ?
-                    wasmInstance.playEventsAndFillSampleBuffer() :
-                    wasmInstance.fillSampleBuffer();
-                for (let n = 0; n < SAMPLE_FRAMES; n++) {
-                    view.setFloat32(offset, leftbuffer[n], true);
-                    offset += 4;
-                    view.setFloat32(offset, rightbuffer[n], true);
-                    offset += 4;
-                }
-                framepos+=SAMPLE_FRAMES;
+            wasmInstance.playEventsAndFillSampleBuffer != undefined ?
+                wasmInstance.playEventsAndFillSampleBuffer() :
+                wasmInstance.fillSampleBuffer();
+
+            for (let n = 0; n < SAMPLE_FRAMES && framepos < durationFrames; n++) {
+                leftview.setFloat32(framepos * 4, wasmleftbuffer[n], isLittleEndian);
+                rightview.setFloat32(framepos * 4, wasmrightbuffer[n], isLittleEndian);
+                framepos++;
             }
-            
+
             postMessage({
                 progress: framepos / durationFrames
             });
-            await new Promise(r => setTimeout(r, 0));
         }
-        postMessage({ musicdata: buffer }, [buffer]);
+        postMessage({ leftbuffer, rightbuffer }, [leftbuffer, rightbuffer]);
     }
 };

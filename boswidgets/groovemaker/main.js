@@ -97,38 +97,47 @@ ${e.message}
 }
 
 async function rendermusic() {
-    const wasmMusicContract = new nearApi.Contract(account, 'webassemblymusic.near', {viewMethods: ['web4_get']});
-    const web4getResponse = await wasmMusicContract.web4_get({request: {'path':'/musicwasms/grooveisinthecode.wasm'}});
+    const wasmMusicContract = new nearApi.Contract(account, 'webassemblymusic.near', { viewMethods: ['web4_get'] });
+    const web4getResponse = await wasmMusicContract.web4_get({ request: { 'path': '/musicwasms/grooveisinthecode.wasm' } });
 
     const wasmBytes = await fetch(`data:application/wasm;base64,${web4getResponse.body}`).then(r => r.arrayBuffer());
 
     const worker = new Worker(new URL('renderworker.js', import.meta.url));
 
-    const musicdata = await new Promise(async resolve => {
+    const bpm = 120;
+    const sampleRate = 44100;
+    const durationMillis = 4 * 60000 / bpm;
+    const durationFrames = durationMillis * sampleRate / 1000;
+
+    const { leftbuffer, rightbuffer } = await new Promise(async resolve => {
         worker.postMessage({
-            wasm: wasmBytes, samplerate: 44100,
-            songduration: 60000
+            wasm: wasmBytes, samplerate: sampleRate,
+            songduration: durationMillis,
+            bpm,
+            patterns: [64, , 72, , 64, , 72, ,],
+            numInstruments: 6
         });
         worker.onmessage = msg => {
-            if (msg.data.musicdata) {
-                resolve(msg.data.musicdata);
+            if (msg.data.leftbuffer) {
+                resolve(msg.data);
             } else {
                 document.querySelector('#loaderprogress').innerHTML = (msg.data.progress * 100).toFixed(2) + '%';
             }
         }
     });
 
-    const dataurl = await new Promise(r => {
-        const fr = new FileReader();
-        fr.onload = () => r(fr.result);
-        fr.readAsDataURL(new Blob([musicdata],{type: 'audio/wav'}));
-    });
-    const playerElement = document.getElementById('player');
-    const sourceElement = document.createElement('source');
-    sourceElement.src = dataurl;
-    sourceElement.type = 'audio/wav';
-    playerElement.appendChild(sourceElement);
-
+    document.getElementById('playbutton').addEventListener('click', () => {
+        const audioCtx = new AudioContext();
+        const audioBuf = audioCtx.createBuffer(2, durationFrames, sampleRate);
+        audioBuf.getChannelData(0).set(new Float32Array(leftbuffer));
+        audioBuf.getChannelData(1).set(new Float32Array(rightbuffer));
+        const audioBufSrc = audioCtx.createBufferSource();
+        audioBufSrc.buffer = audioBuf;
+    
+        audioBufSrc.connect(audioCtx.destination);
+        audioBufSrc.loop = true;
+        audioBufSrc.start(0);
+    });    
 }
 
 
@@ -146,7 +155,7 @@ window.onmessage = async (msg) => {
             rendermusic();
             break;
         case 'ask_ai':
-            const response = await create_and_send_ask_ai_request([{ role: 'user', content: msg.data.aiquestion }]);            
+            const response = await create_and_send_ask_ai_request([{ role: 'user', content: msg.data.aiquestion }]);
             window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
             break;
     }
