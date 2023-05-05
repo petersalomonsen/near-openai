@@ -105,7 +105,7 @@ async function rendermusic() {
     const worker = new Worker(new URL('renderworker.js', import.meta.url));
 
     const bpm = 120;
-    const patternBeats = 4;
+    const patternBeats = 16;
     const patternLength = patternBeats * 4;
     const sampleRate = 44100;
     const durationMillis = patternBeats * 60000 / bpm;
@@ -123,24 +123,48 @@ async function rendermusic() {
         'hihat',
     ];
     const patterns = {
-        bell: [56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0],        
-        bass: [
-            32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30        ],
-        kick: [
-            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0
+        bell: [
+            56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0,
+            54,0,66,0,64,0,66,0,59,0,61,0,58,0,54,0,
+            61,0,73,0,71,0,73,0,66,0,68,0,54,0,61,0,
+            59,0,71,0,70,0,71,0,66,0,71,0,66,0,59,0,
         ],
-        snare: [
-            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0
+        bass: [
+            32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30,
+            30,1,0,0, 30,1,0,0, 28,1,30,0, 30,0,30,28,
+            37,1,0,0, 37,1,0,0, 35,1,37,0, 37,0,37,35,
+            35,1,0,0, 35,1,0,0, 32,1,35,0, 35,0,35,32,
+        ],
+        kick: [
+            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+            120, 0, 0, 0, 120, 0, 0, 50, 120, 0, 100, 0, 120, 0, 0, 0
+        ],
+        lead: [
+            0,0,63,0,68,1,1,0,70,1,71,1,0,0,0,0,
+            0,0,61,0,66,1,1,0,68,1,70,1,0,0,0,0,
+            0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0,  0, 0,
+            75,1,0,0,75,1,1,0,74,1,75,1,71,1,66,1
+        ],
+        snare:[
+            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 80, 0, 100, 0, 0, 50
         ],
         hihat: [
-            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0
+            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+            30,0,30,0,60,0,30,0,30,0,30,0,60,40,60,30
         ]
     };
-    const patternsArray = new Array((channelinstrmap.length + 1) * patternLength);
+    const patternsArray = new Array(channelinstrmap.length * patternLength);
     patternsArray.fill(0);
     channelinstrmap.forEach((instr, instrIndex) => {
         if (patterns[instr]) {
-            patterns[instr].forEach((v, ndx) => patternsArray[(instrIndex + 1) * patternLength + ndx] = v);
+            patterns[instr].forEach((v, ndx) => patternsArray[instrIndex  * patternLength + ndx] = v);
         }
     });
 

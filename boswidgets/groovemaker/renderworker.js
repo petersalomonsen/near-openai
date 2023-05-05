@@ -9,15 +9,17 @@ onmessage = async (msg) => {
             });
         const wasmInstance = (await wasmInstancePromise).instance.exports;
 
-        const patternsptr = wasmInstance.allocatePatterns(msg.data.patterns.length / msg.data.patternLength);
-        const patternsbuf = new Uint8Array(wasmInstance.memory.buffer, patternsptr, (1 + msg.data.numInstruments) * msg.data.patternLength);
+        const patternsptr = wasmInstance.allocatePatterns(msg.data.patterns.length / 16);
+        const patternsbuf = new Uint8Array(wasmInstance.memory.buffer, patternsptr, msg.data.patterns.length);
         patternsbuf.set(msg.data.patterns);
-        const instrpatternlistsptr = wasmInstance.allocateInstrumentPatternList(1, msg.data.numInstruments);
-        const instrpatternlistsbuf = new Uint8Array(wasmInstance.memory.buffer, instrpatternlistsptr, msg.data.numInstruments);
+        const songlength = msg.data.patternLength / 16;
+        const instrpatternlistsptr = wasmInstance.allocateInstrumentPatternList(songlength, msg.data.numInstruments);
+        const instrpatternlistsbuf = new Uint8Array(wasmInstance.memory.buffer, instrpatternlistsptr, msg.data.numInstruments * songlength);
         
         for (let n = 0; n < instrpatternlistsbuf.length; n++) {
-            instrpatternlistsbuf[n] = n + 1;
+            instrpatternlistsbuf[n] = n;
         }
+        console.log(instrpatternlistsbuf);
         wasmInstance.setBPM(msg.data.bpm);
 
         const durationMillis = msg.data.songduration;
