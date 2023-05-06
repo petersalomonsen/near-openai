@@ -28,6 +28,7 @@ export default async (request) => {
                 while(newlinepos >= 0) {
                     currentPart += chunk.substring(0, newlinepos);
 
+                    console.log(currentPart);
                     if (currentPart.startsWith('data: {')) {
                         const currentPartObj = JSON.parse(currentPart.substring('data: '.length));
                         if (currentPartObj.choices[0].delta && currentPartObj.choices[0].delta.content) {
