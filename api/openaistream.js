@@ -24,7 +24,7 @@ export default async (request) => {
 
             let currentPart = '';
             for await (const chunk of openairesponse.body) {
-                const chunkAsText = new TextDecoder().decode(chunk);
+                let chunkAsText = new TextDecoder().decode(chunk);
                 let newlinepos = chunkAsText.indexOf('\n\n');
                 while(newlinepos >= 0) {
                     currentPart += chunkAsText.substring(0, newlinepos);
