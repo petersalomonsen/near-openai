@@ -77,6 +77,7 @@ export default async (request) => {
                         },
                         body: JSON.stringify({
                             model: 'gpt-3.5-turbo',
+                            temperature: 0.5,
                             stream: true,
                             messages: input.messages
                         })

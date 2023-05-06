@@ -3,16 +3,16 @@ import 'https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js';
 
 const EXAMPLE_MUSIC = {
     bell: [
-        56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0,
-        54,0,66,0,64,0,66,0,59,0,61,0,58,0,54,0,
-        61,0,73,0,71,0,73,0,66,0,68,0,54,0,61,0,
-        59,0,71,0,70,0,71,0,66,0,71,0,66,0,59,0,
+        56, 0, 68, 0, 66, 0, 68, 0, 61, 0, 63, 0, 59, 0, 56, 0,
+        54, 0, 66, 0, 64, 0, 66, 0, 59, 0, 61, 0, 58, 0, 54, 0,
+        61, 0, 73, 0, 71, 0, 73, 0, 66, 0, 68, 0, 54, 0, 61, 0,
+        59, 0, 71, 0, 70, 0, 71, 0, 66, 0, 71, 0, 66, 0, 59, 0,
     ],
     bass: [
-        32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30,
-        30,1,0,0, 30,1,0,0, 28,1,30,0, 30,0,30,28,
-        37,1,0,0, 37,1,0,0, 35,1,37,0, 37,0,37,35,
-        35,1,0,0, 35,1,0,0, 32,1,35,0, 35,0,35,32,
+        32, 1, 0, 0, 32, 1, 0, 0, 30, 1, 32, 0, 32, 0, 32, 30,
+        30, 1, 0, 0, 30, 1, 0, 0, 28, 1, 30, 0, 30, 0, 30, 28,
+        37, 1, 0, 0, 37, 1, 0, 0, 35, 1, 37, 0, 37, 0, 37, 35,
+        35, 1, 0, 0, 35, 1, 0, 0, 32, 1, 35, 0, 35, 0, 35, 32,
     ],
     kick: [
         120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
@@ -21,41 +21,41 @@ const EXAMPLE_MUSIC = {
         120, 0, 0, 0, 120, 0, 0, 50, 120, 0, 100, 0, 120, 0, 0, 0
     ],
     pad1: [
-        63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        61,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        64,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        63, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        61, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        63, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
     pad2: [
-        68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        68, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        66, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        68, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        66, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
     pad3: [
-        71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        70,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        73,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+        71, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        73, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        71, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
 
     lead: [
-        0,0,63,0,68,1,1,0,70,1,71,1,0,0,0,0,
-        0,0,61,0,66,1,1,0,68,1,70,1,0,0,0,0,
-        0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0,  0, 0,
-        75,1,0,0,75,1,1,0,73,1,75,1,71,1,66,1
+        0, 0, 63, 0, 68, 1, 1, 0, 70, 1, 71, 1, 0, 0, 0, 0,
+        0, 0, 61, 0, 66, 1, 1, 0, 68, 1, 70, 1, 0, 0, 0, 0,
+        0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0, 0, 0,
+        75, 1, 0, 0, 75, 1, 1, 0, 73, 1, 75, 1, 71, 1, 66, 1
     ],
-    snare:[
+    snare: [
         0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
         0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
         0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
         0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 80, 0, 100, 0, 0, 50
     ],
     hihat: [
-        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-        30,0,30,0,60,0,30,0,30,0,30,0,60,40,60,30
+        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
+        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
+        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
+        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 40, 60, 30
     ]
 };
 
@@ -132,17 +132,28 @@ async function create_ask_ai_request_body(messages) {
 
 async function create_and_send_ask_ai_request(messages) {
     try {
+        window.parent.postMessage({ command: 'aiprogress', progressmessage: 'creating request' }, globalThis.parentOrigin);
         const requestbody = await create_ask_ai_request_body(messages);
-        const airesponse = await fetch(
-            'https://near-openai.vercel.app/api/openai',
-            {
-                method: 'POST',
-                body: requestbody
-            }).then(r => r.json());
-        if (airesponse.error) {
-            throw new Error(JSON.stringify(airesponse.error, null, 1));
+
+        window.parent.postMessage({ command: 'aiprogress', progressmessage: 'sending request' }, globalThis.parentOrigin);
+        const airesponse = await fetch('https://near-openai-git-boswidget-groovemaker-petersalomonsen.vercel.app/api/openaistream',
+            { method: 'POST', body: requestbody }
+        );
+        const responsebody = airesponse.body;
+        const reader = responsebody.getReader();
+
+        const chunks = [];
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            const chunk = new TextDecoder().decode(value);
+            
+            chunks.push(chunk);
+            window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
         }
-        return airesponse.choices[0].message.content;
+        return chunks.join('');
     } catch (e) {
         console.log(e.message);
         return `Unfortunately, there was an error:
@@ -185,7 +196,7 @@ async function rendermusic(patterns) {
     patternsArray.fill(0);
     channelinstrmap.forEach((instr, instrIndex) => {
         if (patterns[instr]) {
-            patterns[instr].forEach((v, ndx) => patternsArray[instrIndex  * patternLength + ndx] = v);
+            patterns[instr].forEach((v, ndx) => patternsArray[instrIndex * patternLength + ndx] = v);
         }
     });
 
@@ -243,7 +254,7 @@ window.onmessage = async (msg) => {
             rendermusic(EXAMPLE_MUSIC);
             break;
         case 'ask_ai':
-            const response = await create_and_send_ask_ai_request([ 
+            const response = await create_and_send_ask_ai_request([
                 {
                     "role": "user",
                     "content": `Here's a description of a JavaScript object containing a musical pattern with the following instruments and specifications:
@@ -264,15 +275,14 @@ The length of each array should be maximum 64, and corresponds to 16 beats.
 In the next message is an example of such a javascript object, that represent a melody with the lead, some background accompany melody with the bell,
 background chords with the pads, and a drumbeat with kick, snare and hihat
 `
-                  },                  
-                { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC)},
-                { role: 'user', content: 'In the next message is a description of the music that should be created. The resulting object should be encoded as a JSON string. An example is in the next message.'},
-                {role: 'user', content: msg.data.aiquestion }
+                },
+                { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC) },
+                { role: 'user', content: 'In the next message is a description of the music that should be created. The resulting object should be encoded as a JSON string. An example is in the next message.' },
+                { role: 'user', content: msg.data.aiquestion }
             ]);
             let error;
             try {
                 const responseObj = JSON.parse(response);
-                console.log(responseObj);
                 rendermusic(responseObj);
             } catch (e) {
                 error = `Error: ${e.message}

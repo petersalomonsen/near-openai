@@ -43,6 +43,9 @@ function handleMessage(msg) {
         case 'airesponse':
             State.update({ airesponse: msg.airesponse, progress: false });
             break;
+        case 'aiprogress':
+            State.update({ airesponse: msg.progressmessage, progress: true });
+            break;
         case 'usingaccount':
             State.update({ accountId: msg.accountId });
             break;
@@ -55,6 +58,14 @@ function handleMessage(msg) {
 
 const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '400px', height: '200px', border: 'none' }}></iframe>;
 
+const progressIndicator = state.progress ? <Progress.Root>
+    <Progress.Indicator state="indeterminate" />
+</Progress.Root> : <button onClick={ask_ai}>Ask ChatGPT</button>;
+
+const responseArea = <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
+    <Markdown text={state.airesponse} />
+</div>;
+
 const secretKeyToggle = state.showSecretKey ? <>
     <button onClick={() => State.update({ showSecretKey: false })}>Hide</button>
     <input type="text" value={state.secretKey} onChange={e => changeSecretKey(e.target.value)}></input>
@@ -64,17 +75,14 @@ const secretKeyToggle = state.showSecretKey ? <>
 return <>
     <p><b>NOTE:</b> Each request costs about 0.005 NEAR. Make sure the spending account below is funded, and you can also get full access to
         that account by using the secret key. Only you have the key to this account, so don't loose it.</p>
-    
-    <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
-    {state.progress ? <Progress.Root>
-        <Progress.Indicator state="indeterminate" />
-    </Progress.Root> : <button onClick={ask_ai}>Ask ChatGPT</button>}
 
-    <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
-        <Markdown text={state.airesponse} />
-    </div>
+    <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
+    {progressIndicator}
+    {responseArea}
 
     {iframe}
+
+    
     <p><br /></p>
 
     <p></p>
