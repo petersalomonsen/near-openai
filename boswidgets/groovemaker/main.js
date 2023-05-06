@@ -1,6 +1,64 @@
 import 'https://cdn.jsdelivr.net/npm/near-api-js@2.1.3/dist/near-api-js.min.js';
 import 'https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js';
 
+const EXAMPLE_MUSIC = {
+    bell: [
+        56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0,
+        54,0,66,0,64,0,66,0,59,0,61,0,58,0,54,0,
+        61,0,73,0,71,0,73,0,66,0,68,0,54,0,61,0,
+        59,0,71,0,70,0,71,0,66,0,71,0,66,0,59,0,
+    ],
+    bass: [
+        32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30,
+        30,1,0,0, 30,1,0,0, 28,1,30,0, 30,0,30,28,
+        37,1,0,0, 37,1,0,0, 35,1,37,0, 37,0,37,35,
+        35,1,0,0, 35,1,0,0, 32,1,35,0, 35,0,35,32,
+    ],
+    kick: [
+        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
+        120, 0, 0, 0, 120, 0, 0, 50, 120, 0, 100, 0, 120, 0, 0, 0
+    ],
+    pad1: [
+        63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        61,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        64,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],
+    pad2: [
+        68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],
+    pad3: [
+        71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        70,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        73,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],
+
+    lead: [
+        0,0,63,0,68,1,1,0,70,1,71,1,0,0,0,0,
+        0,0,61,0,66,1,1,0,68,1,70,1,0,0,0,0,
+        0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0,  0, 0,
+        75,1,0,0,75,1,1,0,73,1,75,1,71,1,66,1
+    ],
+    snare:[
+        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
+        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 80, 0, 100, 0, 0, 50
+    ],
+    hihat: [
+        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+        30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
+        30,0,30,0,60,0,30,0,30,0,30,0,60,40,60,30
+    ]
+};
+
 const networkId = 'mainnet';
 const keyStore = new nearApi.keyStores.InMemoryKeyStore();
 let account;
@@ -96,7 +154,7 @@ ${e.message}
     }
 }
 
-async function rendermusic() {
+async function rendermusic(patterns) {
     const wasmMusicContract = new nearApi.Contract(account, 'webassemblymusic.near', { viewMethods: ['web4_get'] });
     const web4getResponse = await wasmMusicContract.web4_get({ request: { 'path': '/musicwasms/grooveisinthecode.wasm' } });
 
@@ -122,63 +180,7 @@ async function rendermusic() {
         'lead',
         'hihat',
     ];
-    const patterns = {
-        bell: [
-            56,0,68,0,66,0,68,0,61,0,63,0,59,0,56,0,
-            54,0,66,0,64,0,66,0,59,0,61,0,58,0,54,0,
-            61,0,73,0,71,0,73,0,66,0,68,0,54,0,61,0,
-            59,0,71,0,70,0,71,0,66,0,71,0,66,0,59,0,
-        ],
-        bass: [
-            32,1,0,0, 32,1,0,0, 30,1,32,0, 32,0,32,30,
-            30,1,0,0, 30,1,0,0, 28,1,30,0, 30,0,30,28,
-            37,1,0,0, 37,1,0,0, 35,1,37,0, 37,0,37,35,
-            35,1,0,0, 35,1,0,0, 32,1,35,0, 35,0,35,32,
-        ],
-        kick: [
-            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-            120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-            120, 0, 0, 0, 120, 0, 0, 50, 120, 0, 100, 0, 120, 0, 0, 0
-        ],
-        pad1: [
-            63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            61,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            64,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            63,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-        ],
-        pad2: [
-            68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            68,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            66,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-        ],
-        pad3: [
-            71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            70,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            73,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            71,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-        ],
 
-        lead: [
-            0,0,63,0,68,1,1,0,70,1,71,1,0,0,0,0,
-            0,0,61,0,66,1,1,0,68,1,70,1,0,0,0,0,
-            0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0,  0, 0,
-            75,1,0,0,75,1,1,0,73,1,75,1,71,1,66,1
-        ],
-        snare:[
-            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-            0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 80, 0, 100, 0, 0, 50
-        ],
-        hihat: [
-            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-            30,0,30,0,60,0,30,0,30,0,30,0,60,0,30,0,
-            30,0,30,0,60,0,30,0,30,0,30,0,60,40,60,30
-        ]
-    };
     const patternsArray = new Array(channelinstrmap.length * patternLength);
     patternsArray.fill(0);
     channelinstrmap.forEach((instr, instrIndex) => {
@@ -207,7 +209,7 @@ async function rendermusic() {
 
     const playbutton = document.getElementById('playbutton');
     let audioCtx;
-    playbutton.addEventListener('click', () => {
+    playbutton.onclick = () => {
         if (audioCtx) {
             audioCtx.close();
             audioCtx = null;
@@ -223,7 +225,7 @@ async function rendermusic() {
         audioBufSrc.connect(audioCtx.destination);
         audioBufSrc.loop = true;
         audioBufSrc.start(0);
-    });
+    };
 }
 
 
@@ -238,11 +240,49 @@ window.onmessage = async (msg) => {
             break;
         case 'useaccount':
             window.parent.postMessage({ command: 'usingaccount', accountId: await useAccount(msg.data.secretKey) }, globalThis.parentOrigin);
-            rendermusic();
+            rendermusic(EXAMPLE_MUSIC);
             break;
         case 'ask_ai':
-            const response = await create_and_send_ask_ai_request([{ role: 'user', content: msg.data.aiquestion }]);
-            window.parent.postMessage({ command: 'airesponse', airesponse: response }, globalThis.parentOrigin);
+            const response = await create_and_send_ask_ai_request([ 
+                {
+                    "role": "user",
+                    "content": `Here's a description of a JavaScript object containing a musical pattern with the following instruments and specifications:
+bell: an array of MIDI note numbers representing a melody, 0 for silence, 1 for holding a note
+lead: an array of MIDI note numbers representing a melody, 0 for silence, 1 for holding a note
+bass: an array of MIDI note numbers representing a baseline, 0 for silence, 1 for holding a note
+pad1: an array of MIDI note numbers representing the bottom note in a background pad instrument chord, 0 for silence, 1 for holding a note
+pad2: an array of MIDI note numbers representing the middle note in a background pad instrument chord, 0 for silence, 1 for holding a note
+pad3: an array of MIDI note numbers representing the top note in a background pad instrument chord, 0 for silence, 1 for holding a note
+kick: an array of integers representing velocities for a base drum sound
+snare: an array of integers representing velocities for a snare drum sound
+hihat: an array of integers representing velocities for a hihat sound
+
+be aware of the value 1 which is used for holding a note to last longer than just one tick.
+
+The length of each array should be maximum 64, and corresponds to 16 beats.
+
+In the next message is an example of such a javascript object, that represent a melody with the lead, some background accompany melody with the bell,
+background chords with the pads, and a drumbeat with kick, snare and hihat
+`
+                  },                  
+                { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC)},
+                { role: 'user', content: 'In the next message is a description of the music that should be created. The resulting object should be encoded as a JSON string. An example is in the next message.'},
+                {role: 'user', content: msg.data.aiquestion }
+            ]);
+            let error;
+            try {
+                const responseObj = JSON.parse(response);
+                console.log(responseObj);
+                rendermusic(responseObj);
+            } catch (e) {
+                error = `Error: ${e.message}
+                
+Here's the response:
+
+${response}
+                `;
+            }
+            window.parent.postMessage({ command: 'airesponse', airesponse: response, error }, globalThis.parentOrigin);
             break;
     }
 };
