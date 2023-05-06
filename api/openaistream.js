@@ -9,12 +9,29 @@ export default async (request) => {
 
     return new Response(new ReadableStream({
         async start(controller) {
-            for(let n=0;n<60;n++) {
-                console.log('controller enqueue ',n);
-                controller.enqueue(new TextEncoder().encode('counting '+n+'\n'));
-                await new Promise(r => setTimeout(() => r(), 1000));
+            const openairesponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-3.5-turbo',
+                    stream: true,
+                    messages: input.messages
+                })
+            });
+
+            for await (const chunk of openairesponse.body) {
+                controller.enqueue(chunk);
             }
+
             controller.close();
         }
-    }));
+    }), {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST"
+        }
+    });
 };
