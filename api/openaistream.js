@@ -7,7 +7,7 @@ export const config = {
 export default async (request) => {
     const input = await request.json();
 
-    return new ReadableStream({
+    return new Response(new ReadableStream({
         async start(controller) {
             for(let n=0;n<60;n++) {
                 controller.enqueue('counting '+n+'\n');
@@ -15,5 +15,5 @@ export default async (request) => {
             }
             controller.close();
         }
-    });
+    }));
 };
