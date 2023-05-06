@@ -10,6 +10,7 @@ export default async (request) => {
     return new Response(new ReadableStream({
         async start(controller) {
             for(let n=0;n<60;n++) {
+                console.log('controller enqueue ',n);
                 controller.enqueue('counting '+n+'\n');
                 await new Promise(r => setTimeout(() => r(), 1000));
             }
