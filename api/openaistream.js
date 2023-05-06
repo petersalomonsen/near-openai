@@ -22,8 +22,23 @@ export default async (request) => {
                 })
             });
 
-            for await (const chunk of openairesponse.body) {
-                controller.enqueue(chunk);
+            let currentPart = '';
+            for await (let chunk of openairesponse.body) {
+                let newlinepos = chunk.indexOf('\n\n');
+                while(newlinepos >= 0) {
+                    currentPart += chunk.substring(0, newlinepos);
+
+                    if (currentPart.startsWith('data: {')) {
+                        const currentPartObj = JSON.parse(currentPart.substring('data: '.length));
+                        if (currentPartObj.choices[0].delta && currentPartObj.choices[0].delta.content) {
+                            controller.enqueue(new TextEncoder().encode(currentPartObj.choices[0].delta.content));
+                        }
+                    }
+                    chunk = chunk.substring(newlinepos + 2);
+                    newlinepos = chunk.indexOf('\n\n');
+                    currentPart = '';
+                }
+                currentPart += chunk;
             }
 
             controller.close();
