@@ -11,7 +11,7 @@ export default async (request) => {
         async start(controller) {
             for(let n=0;n<60;n++) {
                 console.log('controller enqueue ',n);
-                controller.enqueue('counting '+n+'\n');
+                controller.enqueue(new TextEncoder().encode('counting '+n+'\n'));
                 await new Promise(r => setTimeout(() => r(), 1000));
             }
             controller.close();
