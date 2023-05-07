@@ -115,7 +115,7 @@ async function create_and_send_ask_ai_request(messages) {
         const requestbody = await create_ask_ai_request_body(messages);
 
         window.parent.postMessage({ command: 'aiprogress', progressmessage: 'sending request' }, globalThis.parentOrigin);
-        const airesponse = await fetch('https://near-openai-git-boswidget-groovemaker-petersalomonsen.vercel.app/api/openaistream',
+        const airesponse = await fetch('https://near-openai.vercel.app/api/openaistream',
             { method: 'POST', body: requestbody }
         );
         const responsebody = airesponse.body;
