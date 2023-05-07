@@ -151,7 +151,7 @@ async function create_and_send_ask_ai_request(messages) {
             const chunk = new TextDecoder().decode(value);
             
             chunks.push(chunk);
-            window.parent.postMessage({ command: 'aiprogress', progressmessage: `Received chunk: \`${chunk}\`` }, globalThis.parentOrigin);
+            window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
         }
         return chunks.join('');
     } catch (e) {
@@ -277,8 +277,9 @@ background chords with the pads, and a drumbeat with kick, snare and hihat
 `
                 },
                 { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC) },
-                { role: 'user', content: 'In the next message is a description of the music that should be created. The resulting object should be encoded as a JSON string. An example is in the next message.' },
-                { role: 'user', content: msg.data.aiquestion }
+                { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then be creative, don't copy from the previous message.` },
+                { role: 'user', content: msg.data.aiquestion },
+                { role: 'user', content: 'Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context.'}
             ]);
             let error;
             try {

@@ -24,7 +24,7 @@ function init_iframe() {
 }
 
 function ask_ai() {
-    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion, ts: new Date().getTime() }, airesponse: '', progress: true });
+    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion, ts: new Date().getTime() }, airesponse: '', progress: true, progressText: '' });
 }
 
 function changeSecretKey(secretKey) {
@@ -43,7 +43,7 @@ function handleMessage(msg) {
             State.update({ airesponse: msg.airesponse, progress: false });
             break;
         case 'aiprogress':
-            State.update({ progressText: msg.progressmessage, progress: true });
+            State.update({ progressText: state.progressText + msg.progressmessage, progress: true });
             break;
         case 'usingaccount':
             State.update({ accountId: msg.accountId });
@@ -60,35 +60,35 @@ const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} s
 
 const ProgressWrapper = styled.div`
 .progress-border {
-    border: green solid 1px;
     height: 50px;
     width: 100%;
 }
 
 .progress-text {
     position: absolute;
-    color: #666;
-    text-align: center;
-    width: 100%;
-    height: 100%;
-    font-size: 22px;
+    right: 0px;
+    white-space: nowrap;
+    color: #fff;
+    padding-top: 6px;
+    font-size: 20px;
 }
 
 .progress-fill {
-    background-color: rgba(0,255,0, 0.7);
+    background-color: rgba(0,130,0, 0.5);
+    z-index: 100;
     height: 50px;    
-    width: 10%;
+    width: 25%;
     animation-name: indeterminate;
     animation-duration: 2s;
     animation-iteration-count: infinite;
 }
 
 @keyframes indeterminate {
-    0% { margin-left: 0%; width: 10%;}
-    25% { width: 20%; }
-    50% { margin-left: 90%; width: 10%; }
-    75% { width: 20%; }
-    100% { margin-left: 0%; width: 10%; }
+    0% { margin-left: 0%; width: 25%;}
+    25% { width: 40%; }
+    50% { margin-left: 75%; width: 25%; }
+    75% { width: 40%; }
+    100% { margin-left: 0%; width: 25%; }
 }
 `;
 
