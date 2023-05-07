@@ -38,7 +38,6 @@ const EXAMPLE_MUSIC = {
         73, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         71, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
-
     lead: [
         0, 0, 63, 0, 68, 1, 1, 0, 70, 1, 71, 1, 0, 0, 0, 0,
         0, 0, 61, 0, 66, 1, 1, 0, 68, 1, 70, 1, 0, 0, 0, 0,
@@ -56,12 +55,17 @@ const EXAMPLE_MUSIC = {
         30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
         30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
         30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 40, 60, 30
-    ]
+    ],
+    bpm: 120
 };
+
 
 const networkId = 'mainnet';
 const keyStore = new nearApi.keyStores.InMemoryKeyStore();
 let account;
+let audioCtx;
+let audioBufSrcNode;
+
 const config = {
     keyStore, // instance of UnencryptedFileSystemKeyStore
     networkId,
@@ -149,7 +153,7 @@ async function create_and_send_ask_ai_request(messages) {
                 break;
             }
             const chunk = new TextDecoder().decode(value);
-            
+
             chunks.push(chunk);
             window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
         }
@@ -173,7 +177,8 @@ async function rendermusic(patterns) {
 
     const worker = new Worker(new URL('renderworker.js', import.meta.url));
 
-    const bpm = 120;
+    const bpm = patterns.bpm;
+
     const patternBeats = 16;
     const patternLength = patternBeats * 4;
     const sampleRate = 44100;
@@ -219,7 +224,26 @@ async function rendermusic(patterns) {
     });
 
     const playbutton = document.getElementById('playbutton');
-    let audioCtx;
+
+    const startAudioBufSrcNode = () => {
+        const audioBuf = audioCtx.createBuffer(2, durationFrames, sampleRate);
+        audioBuf.getChannelData(0).set(new Float32Array(leftbuffer));
+        audioBuf.getChannelData(1).set(new Float32Array(rightbuffer));
+        audioBufSrcNode = audioCtx.createBufferSource();
+        audioBufSrcNode.buffer = audioBuf;
+
+        audioBufSrcNode.connect(audioCtx.destination);
+        audioBufSrcNode.loop = true;
+        audioBufSrcNode.start(0);
+    };
+
+    if (audioCtx && audioBufSrcNode) {
+        audioBufSrcNode.stop();
+        audioBufSrcNode.disconnect();
+        audioBufSrcNode = null;
+        startAudioBufSrcNode();
+    }
+
     playbutton.onclick = () => {
         if (audioCtx) {
             audioCtx.close();
@@ -227,15 +251,7 @@ async function rendermusic(patterns) {
             return;
         }
         audioCtx = new AudioContext();
-        const audioBuf = audioCtx.createBuffer(2, durationFrames, sampleRate);
-        audioBuf.getChannelData(0).set(new Float32Array(leftbuffer));
-        audioBuf.getChannelData(1).set(new Float32Array(rightbuffer));
-        const audioBufSrc = audioCtx.createBufferSource();
-        audioBufSrc.buffer = audioBuf;
-
-        audioBufSrc.connect(audioCtx.destination);
-        audioBufSrc.loop = true;
-        audioBufSrc.start(0);
+        startAudioBufSrcNode();
     };
 }
 
@@ -254,10 +270,13 @@ window.onmessage = async (msg) => {
             rendermusic(EXAMPLE_MUSIC);
             break;
         case 'ask_ai':
-            const response = await create_and_send_ask_ai_request([
-                {
-                    "role": "user",
-                    "content": `Here's a description of a JavaScript object containing a musical pattern with the following instruments and specifications:
+            let error;
+            let response;
+            try {
+                response = await create_and_send_ask_ai_request([
+                    {
+                        "role": "user",
+                        "content": `Here's a description of a JavaScript object containing a musical pattern with the following instruments and specifications:
 bell: an array of MIDI note numbers representing a melody, 0 for silence, 1 for holding a note
 lead: an array of MIDI note numbers representing a melody, 0 for silence, 1 for holding a note
 bass: an array of MIDI note numbers representing a baseline, 0 for silence, 1 for holding a note
@@ -267,33 +286,30 @@ pad3: an array of MIDI note numbers representing the top note in a background pa
 kick: an array of integers representing velocities for a base drum sound
 snare: an array of integers representing velocities for a snare drum sound
 hihat: an array of integers representing velocities for a hihat sound
+bpm: an integer representing tempo in beats per minute. From 60 which is very slow to 150 which is very fast
 
-be aware of the value 1 which is used for holding a note to last longer than just one tick.
+Be aware of the value 1 which is used for holding a note to last longer than just one tick.
 
-The length of each array should be maximum 64, and corresponds to 16 beats.
+The length of each array is maximum 64 which corresponds to 16 beats. Each beat is 4 ticks. One array element is one tick.
 
 In the next message is an example of such a javascript object, that represent a melody with the lead, some background accompany melody with the bell,
-background chords with the pads, and a drumbeat with kick, snare and hihat
+background chords with the pads, and a drumbeat with kick, snare and hihat.
 `
-                },
-                { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC) },
-                { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then be creative, don't copy from the previous message.` },
-                { role: 'user', content: msg.data.aiquestion },
-                { role: 'user', content: 'Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context.'}
-            ]);
-            let error;
-            try {
+                    },
+                    { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC) },
+                    { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then be creative, don't copy from the previous message.` },
+                    { role: 'user', content: msg.data.aiquestion },
+                    { role: 'user', content: 'Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context. The length of each array should be maximum 64.' }
+                ]);
                 const responseObj = JSON.parse(response);
                 rendermusic(responseObj);
             } catch (e) {
                 error = `Error: ${e.message}
-                
-Here's the response:
 
 ${response}
                 `;
             }
-            window.parent.postMessage({ command: 'airesponse', airesponse: response, error }, globalThis.parentOrigin);
+            window.parent.postMessage({ command: 'airesponse', airesponse: 'Music is ready!', error }, globalThis.parentOrigin);
             break;
     }
 };

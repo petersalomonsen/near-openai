@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta charset="UTF-8">
-    </head>
-    <body>
-        <button id="playbutton">play</button>
-        <div id="loaderprogress"></div>
-    </body>
-    <script type="module" src="main.js"></script>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <style>
+        button {
+            padding: 10px;
+            border: none;
+            border: #114 solid 4px;
+            background-color: white;
+            color: black;
+        }
+
+        button:hover {
+            background-color: #555;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="playbutton">play</button>
+    <p>Rendering: <span id="loaderprogress"></span></p>
+</body>
+<script type="module" src="main.js"></script>
+
 </html>
