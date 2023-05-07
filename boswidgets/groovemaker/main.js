@@ -3,62 +3,37 @@ import 'https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/src/sha256.min.js';
 
 const EXAMPLE_MUSIC = {
     bell: [
-        56, 0, 68, 0, 66, 0, 68, 0, 61, 0, 63, 0, 59, 0, 56, 0,
-        54, 0, 66, 0, 64, 0, 66, 0, 59, 0, 61, 0, 58, 0, 54, 0,
-        61, 0, 73, 0, 71, 0, 73, 0, 66, 0, 68, 0, 54, 0, 61, 0,
-        59, 0, 71, 0, 70, 0, 71, 0, 66, 0, 71, 0, 66, 0, 59, 0,
+        56, 0, 68, 0, 66, 0, 68, 0, 61, 0, 63, 0, 59, 0, 56, 0
     ],
     bass: [
-        32, 1, 0, 0, 32, 1, 0, 0, 30, 1, 32, 0, 32, 0, 32, 30,
-        30, 1, 0, 0, 30, 1, 0, 0, 28, 1, 30, 0, 30, 0, 30, 28,
-        37, 1, 0, 0, 37, 1, 0, 0, 35, 1, 37, 0, 37, 0, 37, 35,
-        35, 1, 0, 0, 35, 1, 0, 0, 32, 1, 35, 0, 35, 0, 35, 32,
+        32, 1, 0, 0, 32, 1, 0, 0, 30, 1, 32, 0, 32, 0, 32, 30
     ],
     kick: [
-        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0,
-        120, 0, 0, 0, 120, 0, 0, 50, 120, 0, 100, 0, 120, 0, 0, 0
+        120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0, 120, 0, 0, 0
     ],
     pad1: [
-        63, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        61, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         63, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
     pad2: [
-        68, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        66, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        68, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        66, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        68, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
     pad3: [
-        71, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        73, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         71, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ],
     lead: [
-        0, 0, 63, 0, 68, 1, 1, 0, 70, 1, 71, 1, 0, 0, 0, 0,
-        0, 0, 61, 0, 66, 1, 1, 0, 68, 1, 70, 1, 0, 0, 0, 0,
-        0, 0, 68, 0, 73, 1, 1, 0, 75, 1, 76, 1, 0, 0, 0, 0,
-        75, 1, 0, 0, 75, 1, 1, 0, 73, 1, 75, 1, 71, 1, 66, 1
+        0, 0, 63, 0, 68, 1, 1, 0, 70, 1, 71, 1, 0, 0, 0, 0
     ],
     snare: [
-        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0,
-        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 80, 0, 100, 0, 0, 50
+        0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 50
     ],
     hihat: [
-        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
-        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
-        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0,
-        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 40, 60, 30
+        30, 0, 30, 0, 60, 0, 30, 0, 30, 0, 30, 0, 60, 0, 30, 0
     ],
     bpm: 120
 };
-
+const ticksPerBeat = 4;
+const patternBeats = 4;
+const patternLength = patternBeats * ticksPerBeat;
 
 const networkId = 'mainnet';
 const keyStore = new nearApi.keyStores.InMemoryKeyStore();
@@ -179,8 +154,6 @@ async function rendermusic(patterns) {
 
     const bpm = patterns.bpm;
 
-    const patternBeats = 16;
-    const patternLength = patternBeats * 4;
     const sampleRate = 44100;
     const durationMillis = patternBeats * 60000 / bpm;
     const durationFrames = durationMillis * sampleRate / 1000;
@@ -290,7 +263,7 @@ bpm: an integer representing tempo in beats per minute. From 60 which is very sl
 
 Be aware of the value 1 which is used for holding a note to last longer than just one tick.
 
-The length of each array is maximum 64 which corresponds to 16 beats. Each beat is 4 ticks. One array element is one tick.
+The length of each array is maximum ${patternLength} which corresponds to ${patternBeats} beats. Each beat is ${ticksPerBeat} ticks. One array element is one tick.
 
 In the next message is an example of such a javascript object, that represent a melody with the lead, some background accompany melody with the bell,
 background chords with the pads, and a drumbeat with kick, snare and hihat.
@@ -299,7 +272,7 @@ background chords with the pads, and a drumbeat with kick, snare and hihat.
                     { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC, null, 1) },
                     { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then use elements from popular music, don't copy from the previous message.` },
                     { role: 'user', content: msg.data.aiquestion },
-                    { role: 'user', content: `Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context. The length of each array should be maximum 64. If an array is all zeros you don't need to include that property.` }
+                    { role: 'user', content: `Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context. The length of each array should be maximum ${patternLength}. If an array is all zeros you don't need to include that property.` }
                 ]);
 
                 const responseObj = JSON.parse(response);
