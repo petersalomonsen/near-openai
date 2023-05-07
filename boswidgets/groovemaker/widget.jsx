@@ -40,7 +40,7 @@ function handleMessage(msg) {
             State.update({ accountId: msg.accountId, secretKey: msg.secretKey });
             break;
         case 'airesponse':
-            State.update({ airesponse: msg.airesponse, progress: false });
+            State.update({ airesponse: msg.airesponse, progress: false, error: msg.error });
             break;
         case 'aiprogress':
             State.update({ progressText: state.progressText + msg.progressmessage, progress: true });
@@ -97,9 +97,9 @@ const progressIndicator = state.progress ? <ProgressWrapper><div id="main-progre
     <div class="progress-fill"></div>
 </div></ProgressWrapper> : <button onClick={ask_ai}>Ask ChatGPT</button>;
 
-const responseArea = <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
-    <Markdown text={state.airesponse} />
-</div>;
+const responseArea =  state.error ? <div style={{ color: 'red', backgroundColor: '#f8f8f8' }}>
+<Markdown text={state.error} />
+</div> : '';
 
 const secretKeyToggle = state.showSecretKey ? <>
     <button onClick={() => State.update({ showSecretKey: false })}>Hide</button>
@@ -116,7 +116,6 @@ return <>
     {responseArea}
 
     {iframe}
-
 
     <p><br /></p>
 

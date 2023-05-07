@@ -296,11 +296,12 @@ In the next message is an example of such a javascript object, that represent a 
 background chords with the pads, and a drumbeat with kick, snare and hihat.
 `
                     },
-                    { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC) },
-                    { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then be creative, don't copy from the previous message.` },
+                    { role: 'user', content: JSON.stringify(EXAMPLE_MUSIC, null, 1) },
+                    { role: 'user', content: `The next message is a description of the music that should be created. If the description has few details, then use elements from popular music, don't copy from the previous message.` },
                     { role: 'user', content: msg.data.aiquestion },
-                    { role: 'user', content: 'Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context. The length of each array should be maximum 64.' }
+                    { role: 'user', content: `Now create a javascript object with music according to the description in the previous message. The resulting object should be encoded as a JSON string that can be parsed directly, and no other surrounding context. The length of each array should be maximum 64. If an array is all zeros you don't need to include that property.` }
                 ]);
+
                 const responseObj = JSON.parse(response);
                 rendermusic(responseObj);
             } catch (e) {
@@ -309,7 +310,8 @@ background chords with the pads, and a drumbeat with kick, snare and hihat.
 ${response}
                 `;
             }
-            window.parent.postMessage({ command: 'airesponse', airesponse: 'Music is ready!', error }, globalThis.parentOrigin);
+
+            window.parent.postMessage({ command: 'airesponse', airesponse: response, error }, globalThis.parentOrigin);
             break;
     }
 };
