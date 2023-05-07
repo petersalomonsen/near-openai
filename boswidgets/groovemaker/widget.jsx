@@ -24,8 +24,7 @@ function init_iframe() {
 }
 
 function ask_ai() {
-    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion, ts: new Date().getTime() }, progress: true });
-    console.log('state updated', state.iframeMessage);
+    State.update({ iframeMessage: { command: 'ask_ai', aiquestion: state.aiquestion, ts: new Date().getTime() }, airesponse: '', progress: true });
 }
 
 function changeSecretKey(secretKey) {
@@ -44,7 +43,7 @@ function handleMessage(msg) {
             State.update({ airesponse: msg.airesponse, progress: false });
             break;
         case 'aiprogress':
-            State.update({ airesponse: msg.progressmessage, progress: true });
+            State.update({ progressText: msg.progressmessage, progress: true });
             break;
         case 'usingaccount':
             State.update({ accountId: msg.accountId });
@@ -58,9 +57,45 @@ function handleMessage(msg) {
 
 const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '400px', height: '200px', border: 'none' }}></iframe>;
 
-const progressIndicator = state.progress ? <Progress.Root>
-    <Progress.Indicator state="indeterminate" />
-</Progress.Root> : <button onClick={ask_ai}>Ask ChatGPT</button>;
+
+const ProgressWrapper = styled.div`
+.progress-border {
+    border: green solid 1px;
+    height: 50px;
+    width: 100%;
+}
+
+.progress-text {
+    position: absolute;
+    color: #666;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    font-size: 22px;
+}
+
+.progress-fill {
+    background-color: rgba(0,255,0, 0.7);
+    height: 50px;    
+    width: 10%;
+    animation-name: indeterminate;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+}
+
+@keyframes indeterminate {
+    0% { margin-left: 0%; width: 10%;}
+    25% { width: 20%; }
+    50% { margin-left: 90%; width: 10%; }
+    75% { width: 20%; }
+    100% { margin-left: 0%; width: 10%; }
+}
+`;
+
+const progressIndicator = state.progress ? <ProgressWrapper><div id="main-progress-bar" class="progress-border">
+    <div class="progress-text">{state.progressText}</div>
+    <div class="progress-fill"></div>
+</div></ProgressWrapper> : <button onClick={ask_ai}>Ask ChatGPT</button>;
 
 const responseArea = <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f5f5f5' }}>
     <Markdown text={state.airesponse} />
@@ -82,7 +117,7 @@ return <>
 
     {iframe}
 
-    
+
     <p><br /></p>
 
     <p></p>

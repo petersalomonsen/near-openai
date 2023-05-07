@@ -151,7 +151,7 @@ async function create_and_send_ask_ai_request(messages) {
             const chunk = new TextDecoder().decode(value);
             
             chunks.push(chunk);
-            window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
+            window.parent.postMessage({ command: 'aiprogress', progressmessage: `Received chunk: \`${chunk}\`` }, globalThis.parentOrigin);
         }
         return chunks.join('');
     } catch (e) {
