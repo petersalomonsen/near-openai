@@ -110,38 +110,33 @@ async function create_ask_ai_request_body(messages) {
 }
 
 async function create_and_send_ask_ai_request(messages) {
-    try {
-        window.parent.postMessage({ command: 'aiprogress', progressmessage: 'creating request' }, globalThis.parentOrigin);
-        const requestbody = await create_ask_ai_request_body(messages);
+    window.parent.postMessage({ command: 'aiprogress', progressmessage: 'creating request' }, globalThis.parentOrigin);
+    const requestbody = await create_ask_ai_request_body(messages);
 
-        window.parent.postMessage({ command: 'aiprogress', progressmessage: 'sending request' }, globalThis.parentOrigin);
-        const airesponse = await fetch('https://near-openai.vercel.app/api/openaistream',
-            { method: 'POST', body: requestbody }
-        );
-        const responsebody = airesponse.body;
-        const reader = responsebody.getReader();
-
-        const chunks = [];
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                break;
-            }
-            const chunk = new TextDecoder().decode(value);
-
-            chunks.push(chunk);
-            window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
-        }
-        return chunks.join('');
-    } catch (e) {
-        console.log(e.message);
-        return `Unfortunately, there was an error:
-
-\`\`\`
-${e.message}
-\`\`\`
-`;
+    window.parent.postMessage({ command: 'aiprogress', progressmessage: 'sending request' }, globalThis.parentOrigin);
+    const airesponse = await fetch('https://near-openai.vercel.app/api/openaistream',
+        { method: 'POST', body: requestbody }
+    );
+    if (!airesponse.ok) {
+        throw new Error(`${airesponse.status} ${airesponse.statusText}
+${await airesponse.text()}
+`);
     }
+    const responsebody = airesponse.body;
+    const reader = responsebody.getReader();
+
+    const chunks = [];
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+        const chunk = new TextDecoder().decode(value);
+
+        chunks.push(chunk);
+        window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
+    }
+    return chunks.join('');
 }
 
 async function rendermusic(patterns) {
@@ -278,9 +273,10 @@ background chords with the pads, and a drumbeat with kick, snare and hihat.
                 const responseObj = JSON.parse(response);
                 rendermusic(responseObj);
             } catch (e) {
-                error = `Error: ${e.message}
+                error = `Error:
+${e.message ?? ''}
 
-${response}
+${response ?? ''}
                 `;
             }
 
