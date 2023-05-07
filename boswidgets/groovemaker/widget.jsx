@@ -55,7 +55,7 @@ function handleMessage(msg) {
     }
 }
 
-const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '400px', height: '200px', border: 'none' }}></iframe>;
+const iframe = <iframe message={state.iframeMessage} onMessage={handleMessage} src="IFRAME_DATA_URI" style={{ width: '400px', height: '100px', border: 'none' }}></iframe>;
 
 
 const ProgressWrapper = styled.div`
@@ -97,7 +97,7 @@ const progressIndicator = state.progress ? <ProgressWrapper><div id="main-progre
     <div class="progress-fill"></div>
 </div></ProgressWrapper> : <button onClick={ask_ai}>Ask ChatGPT</button>;
 
-const responseArea =  state.error ? <div style={{ color: 'red', backgroundColor: '#f8f8f8' }}>
+const responseArea =  state.error ? <div style={{ color: 'red', backgroundColor: '#f8f8f8', width: '100%' }}>
 <Markdown text={state.error} />
 </div> : '';
 
@@ -113,11 +113,10 @@ return <>
 
     <textarea style={{ width: '100%' }} onChange={e => State.update({ aiquestion: e.target.value })} value={state.aiquestion}></textarea>
     {progressIndicator}
+    <br />
     {responseArea}
 
     {iframe}
-
-    <p><br /></p>
 
     <p></p>
     <p>Spending account ID: <pre>{state.accountId}</pre></p>
