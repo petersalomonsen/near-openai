@@ -52,6 +52,10 @@ function handleMessage(msg) {
             console.log('ready');
             init_iframe();
             break;
+        case 'download':            
+            State.update({downloadLink: URL.createObjectURL(new Blob([msg.buffer], { type: 'audio/wav' }))});
+
+            break;
     }
 }
 
@@ -101,6 +105,8 @@ const responseArea =  state.error ? <div style={{ color: 'red', backgroundColor:
 <Markdown text={state.error} />
 </div> : '';
 
+const downloadLink = state.downloadLink ? <a href={state.downloadLink} download="chatgptmusic.wav">Download</a> : '';
+
 const secretKeyToggle = state.showSecretKey ? <>
     <button onClick={() => State.update({ showSecretKey: false })}>Hide</button>
     <input type="text" value={state.secretKey} onChange={e => changeSecretKey(e.target.value)}></input>
@@ -117,7 +123,9 @@ return <>
     {responseArea}
 
     {iframe}
-
+    <p>
+    {downloadLink}
+    </p>
     <p></p>
     <p>Spending account ID: <pre>{state.accountId}</pre></p>
     <p>Spending account secret key: {secretKeyToggle}</p>
