@@ -51,12 +51,16 @@ function handleMessage(msg) {
             State.update({ accountId: msg.accountId });
             break;
         case 'mint':
+            State.update({error: ''});
             Near.call('jsinrustnft.near', 'nft_mint',
                 Object.assign({}, msg.args, {
                     title: msg.args.token_id,
                     description: state.aiquestion
                 }),
                 undefined, (1_000_00000_00000_00000_00000n).toString());
+            break;
+        case 'error':
+            State.update({ error: msg.error });
             break;
     }
 }

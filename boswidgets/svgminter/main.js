@@ -138,16 +138,51 @@ let colors_array;
 
 mintButton.addEventListener('click', async () => {
     const owner_input = document.getElementById('owner_input');
-    const token_owner_id = document.getElementById('owner_input').value;
+    const token_owner_id = document.getElementById('owner_input').value.trim();
     if (!token_owner_id) {
-        owner_input.classList.add('missingowner');
+        owner_input.classList.add('error');
+
+        window.parent.postMessage({ command: 'error', error: 'You must provide an owner account for the NFT' }, globalThis.parentOrigin);
         return;
     }
-    owner_input.classList.remove('missingowner');
+    owner_input.classList.remove('error');
+
+    try {
+        await near.connection.provider.query({
+            request_type: "view_account",
+            finality: "final",
+            account_id: token_owner_id,
+        });
+    } catch (e) {
+        window.parent.postMessage({ command: 'error', error: `Unknown account: ${token_owner_id}` }, globalThis.parentOrigin);
+        owner_input.classList.add('error');
+        return;
+    }
+    owner_input.classList.remove('error');
+
+    const tokenIdInput = document.getElementById('token_id_input');
+    const token_id = tokenIdInput.value.trim();
+    if (!token_id) {
+        tokenIdInput.classList.add('error');
+        window.parent.postMessage({ command: 'error', error: `Token ID cannot be empty` }, globalThis.parentOrigin);
+        return;
+    }
+    tokenIdInput.classList.remove('error');
+    const contract = new nearApi.Contract(account, nftContractId, {
+        viewMethods: ['nft_token']
+    });    
+    const existingToken = await contract.nft_token({token_id});
+    console.log(existingToken);
+    if (existingToken) {
+        tokenIdInput.classList.add('error');
+        window.parent.postMessage({ command: 'error', error: `Token ID "${token_id}" is already taken, must be unique` }, globalThis.parentOrigin);
+        return;
+    }
+    tokenIdInput.classList.remove('error');
 
     window.parent.postMessage({
         command: 'mint', args: {
-            token_id: document.getElementById('token_id_input').value,
+            token_id,
             token_owner_id,
             font_size: document.getElementById('font_size_input').value,
             colors: colors_array
