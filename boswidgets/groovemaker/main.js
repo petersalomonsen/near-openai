@@ -83,6 +83,9 @@ async function create_ask_ai_request_body(messages) {
     const publicKey = await account.connection.signer.getPublicKey(account.accountId, account.connection.networkId);
 
     const accessKey = (await account.findAccessKey()).accessKey;
+    if (!findAccessKeyResult) {
+        throw new Error(`Account has no funds. From your wallet, send a small amount to ${account.accountId}`)
+    }
 
     const nonce = ++accessKey.nonce;
     const recentBlockHash = nearApi.utils.serialize.base_decode(
