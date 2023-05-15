@@ -32,6 +32,19 @@ async function useAccount(secretKey) {
     return accountId;
 }
 
+async function generate_preview_svg() {
+    const contract = new nearApi.Contract(account, nftContractId, {
+        viewMethods: ['call_js_func']
+    });
+    const result = await contract.call_js_func({
+        function_name: 'svg_preview',
+        token_id: document.getElementById('token_id_input').value,
+        font_size: document.getElementById('font_size_input').value,
+        colors: colors_array
+    });
+    document.getElementById('previewresultview').innerHTML = result.svg;
+}
+
 async function create_ask_ai_request_body(messages) {
     const accountId = account.accountId;
 
@@ -43,6 +56,7 @@ async function create_ask_ai_request_body(messages) {
     const receiverId = 'jsinrust.near';
     const method_name = 'ask_ai';
     const gas = '30000000000000';
+
     const publicKey = await account.connection.signer.getPublicKey(account.accountId, account.connection.networkId);
 
     const findAccessKeyResult = await account.findAccessKey();
@@ -77,26 +91,46 @@ async function create_ask_ai_request_body(messages) {
 }
 
 async function create_and_send_ask_ai_request(messages) {
-    try {
-        const requestbody = await create_ask_ai_request_body(messages);
-        const airesponse = await fetch(
-            'https://near-openai.vercel.app/api/openai',
-            {
-                method: 'POST',
-                body: requestbody
-            }).then(r => r.json());
-        if (airesponse.error) {
-            throw new Error(JSON.stringify(airesponse.error, null, 1));
-        }
-        return airesponse.choices[0].message.content;
-    } catch (e) {
-        console.log(e.message);
-        return `
-\`\`\`
-${e.message}
-\`\`\`
-`;
+    window.parent.postMessage({ command: 'aiprogress', progressmessage: 'creating request' }, globalThis.parentOrigin);
+    const requestbody = await create_ask_ai_request_body(messages);
+
+    window.parent.postMessage({ command: 'aiprogress', progressmessage: 'sending request' }, globalThis.parentOrigin);
+    const airesponse = await fetch('https://near-openai.vercel.app/api/openaistream',
+        { method: 'POST', body: requestbody }
+    );
+    if (!airesponse.ok) {
+        throw new Error(`${airesponse.status} ${airesponse.statusText}
+${await airesponse.text()}
+`);
     }
+    const responsebody = airesponse.body;
+    const reader = responsebody.getReader();
+
+    const chunks = [];
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+        const chunk = new TextDecoder().decode(value);
+
+        chunks.push(chunk);
+        window.parent.postMessage({ command: 'aiprogress', progressmessage: chunk }, globalThis.parentOrigin);
+        let currentResult = chunks.join('');
+        const arrayStartIndex = currentResult.indexOf('[');
+        if (arrayStartIndex > -1) {
+            currentResult = currentResult.substring(arrayStartIndex);
+            const lastComma = currentResult.lastIndexOf('",');
+            if (lastComma > -1) {
+                currentResult = currentResult.substring(0, lastComma + 1) + ']]';
+                const rects = Array.from(document.querySelectorAll('#previewresultview svg rect'))
+
+                const colorArray = JSON.parse(currentResult).flat();
+                colorArray.forEach((val, ndx) => rects[ndx].attributes.fill.value = val);
+            }
+        }
+    }
+    return chunks.join('');
 }
 
 const mintButton = document.getElementById('mint_button');
@@ -104,16 +138,51 @@ let colors_array;
 
 mintButton.addEventListener('click', async () => {
     const owner_input = document.getElementById('owner_input');
-    const token_owner_id = document.getElementById('owner_input').value;
+    const token_owner_id = document.getElementById('owner_input').value.trim();
     if (!token_owner_id) {
-        owner_input.classList.add('missingowner');
+        owner_input.classList.add('error');
+
+        window.parent.postMessage({ command: 'error', error: 'You must provide an owner account for the NFT' }, globalThis.parentOrigin);
         return;
     }
-    owner_input.classList.remove('missingowner');
+    owner_input.classList.remove('error');
+
+    try {
+        await near.connection.provider.query({
+            request_type: "view_account",
+            finality: "final",
+            account_id: token_owner_id,
+        });
+    } catch (e) {
+        window.parent.postMessage({ command: 'error', error: `Unknown account: ${token_owner_id}` }, globalThis.parentOrigin);
+        owner_input.classList.add('error');
+        return;
+    }
+    owner_input.classList.remove('error');
+
+    const tokenIdInput = document.getElementById('token_id_input');
+    const token_id = tokenIdInput.value.trim();
+    if (!token_id) {
+        tokenIdInput.classList.add('error');
+        window.parent.postMessage({ command: 'error', error: `Token ID cannot be empty` }, globalThis.parentOrigin);
+        return;
+    }
+    tokenIdInput.classList.remove('error');
+    const contract = new nearApi.Contract(account, nftContractId, {
+        viewMethods: ['nft_token']
+    });    
+    const existingToken = await contract.nft_token({token_id});
+    console.log(existingToken);
+    if (existingToken) {
+        tokenIdInput.classList.add('error');
+        window.parent.postMessage({ command: 'error', error: `Token ID "${token_id}" is already taken, must be unique` }, globalThis.parentOrigin);
+        return;
+    }
+    tokenIdInput.classList.remove('error');
 
     window.parent.postMessage({
         command: 'mint', args: {
-            token_id: document.getElementById('token_id_input').value,
+            token_id,
             token_owner_id,
             font_size: document.getElementById('font_size_input').value,
             colors: colors_array
@@ -125,17 +194,8 @@ const previewButton = document.getElementById('preview_button');
 const nftContractId = 'jsinrustnft.near';
 previewButton.addEventListener('click', async () => {
     document.getElementById('previewresultview').innerHTML = 'Please wait while generating preview';
-    const contract = new nearApi.Contract(account, nftContractId, {
-        viewMethods: ['call_js_func']
-    });
     try {
-        const result = await contract.call_js_func({
-            function_name: 'svg_preview',
-            token_id: document.getElementById('token_id_input').value,
-            font_size: document.getElementById('font_size_input').value,
-            colors: colors_array
-        });
-        document.getElementById('previewresultview').innerHTML = result.svg;
+        await generate_preview_svg();
         const color_input = document.getElementById('color_input');
         colors_array = [];
         Array.from(document.querySelectorAll('#previewresultview svg rect'))
@@ -173,26 +233,28 @@ window.onmessage = async (msg) => {
             window.parent.postMessage({ command: 'usingaccount', accountId: await useAccount(msg.data.secretKey) }, globalThis.parentOrigin);
             break;
         case 'ask_ai':
-            const response = await create_and_send_ask_ai_request([
-                { role: 'user', content: `In the next message there will be a description that you should use to create 9x9 pixel art, and as inspiration for a word to be used as a token id. If the description is weak, then be creative.` },
-                { role: 'user', content: msg.data.aiquestion },
-                {
-                    role: 'user', content: `
-                Give me only a json result that I can parse directly, and no other surrounding context. The json should contain a property called image which is a 9x9 array with string of CSS color codes representing the pixel art. The other property should be named token_id and contain the word for the token id.` },
-            ]);
-
             let error;
+            let response;
             try {
+                colors_array = new Array(81).fill('black');
+                await generate_preview_svg();
+                response = await create_and_send_ask_ai_request([
+                    { role: 'user', content: `In the next message there will be a description that you should use to create 9x9 pixel art, and as inspiration for a word to be used as a token id. If the description is weak, then be creative.` },
+                    { role: 'user', content: msg.data.aiquestion },
+                    {
+                        role: 'user', content: `
+                    Give me only a json result that I can parse directly, and no other surrounding context. The json should contain a property called image which is a 9x9 array with string of CSS color codes representing the pixel art. The other property should be named token_id and contain the word for the token id.` },
+                ]);
+
                 const responseObj = JSON.parse(response);
                 colors_array = responseObj.image.flat();
                 document.getElementById('token_id_input').value = responseObj.token_id;
                 previewButton.click();
             } catch (e) {
-                error = `Error: ${e.message}
-                
-Here's the response:
+                error = `Error:
+${e.message ?? ''}
 
-${response}
+${response ?? ''}
                 `;
             }
             window.parent.postMessage({ command: 'airesponse', airesponse: response, error }, globalThis.parentOrigin);
@@ -200,4 +262,4 @@ ${response}
     }
 };
 
-window.parent.postMessage({ command: 'ready' }, '*');
+console.log('iframe loaded');
