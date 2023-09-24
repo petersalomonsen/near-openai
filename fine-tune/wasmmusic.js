@@ -53,6 +53,47 @@ example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n
 
 examples.push(example);
 
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "I would like a baseline like d2(0.5),,,d3(0.1),,a2(0.1),c3(0.1),d3(0.1), and then in c and then in g and finally in f");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('baseline.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Give me a drumbeat in 120 bpm");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('drumbeat.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Give me a drumbeat, with a base in d at 120 bpm");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('drumsandbase.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Give me a drumbeat, with a base in d, and guitar at 120 bpm");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('drumsandbaseandguitar.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Give me a drumbeat, with a base in e minor, and guitar at 120 bpm");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('drumsandbaseandguitar.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Give me a drumbeat, with a base in e minor, and guitar at 120 bpm");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('drumsandbaseandguitar_e.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
 
 const filecontent = examples.map(example => JSON.stringify(example)).join('\n');
 const filename = 'wasmmusic.jsonl';
