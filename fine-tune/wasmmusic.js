@@ -21,6 +21,39 @@ example.addMessage('assistant', "Here's your javascript code:\n```\n" + await re
 
 examples.push(example);
 
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "I have the instruments: piano, strings, drums, and I want chords in d minor and c major on every 1/8th for the piano and on every 2/4th for the strings, and a drum beat with alternating kick and snare and with hihats.");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('simpletrack.js', import.meta.url)) + "\n```\n");
+example.addMessage('user', "Can you also add a simple bass?");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code including a bass:\n```\n" + await readFile(new URL('simpletrack_w_bass.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "I have the instruments: piano, strings, drums, guitar and bass, and I want chords in d minor and c major on every 1/8th for the piano and on every 2/4th for the strings, and a drum beat with alternating kick and snare and with hihats, and a simple bass.");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('simpletrack_w_bass.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Can you write the code for jingle bells on the piano?");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('jinglebells.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+example = new Example();
+example.addMessage('system', "I write javascript code for WebAssembly Music");
+example.addMessage('user', "Can you write the code for jingle bells on the piano?");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('jinglebells.js', import.meta.url)) + "\n```\n");
+example.addMessage('user', "Can you also add bass?");
+example.addMessage('assistant', "Here's the WebAssembly Music javascript code:\n```\n" + await readFile(new URL('jinglebells_w_bass.js', import.meta.url)) + "\n```\n");
+
+examples.push(example);
+
+
 const filecontent = examples.map(example => JSON.stringify(example)).join('\n');
 const filename = 'wasmmusic.jsonl';
 const filepath = new URL('wasmmusic.jsonl', import.meta.url);
@@ -36,4 +69,13 @@ const uploadAndTune = async () => {
     console.log(fineTune);
 }
 
+const deleteFiles = async () => {
+    const files = await openai.files.list();
 
+    for (const file of files.data) {
+        await openai.files.del(file.id);
+    }
+}
+
+const jobs = await openai.fineTuning.jobs.list();
+console.log(jobs.data[0].error);
