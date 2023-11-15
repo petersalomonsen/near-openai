@@ -1,4 +1,5 @@
 const token = process.env.OPENAI_TOKEN;
+const DEFAULT_MODEL = 'gpt-3.5-turbo';
 
 export const config = {
     runtime: 'edge',
@@ -76,7 +77,7 @@ export default async (request) => {
                             'content-type': 'application/json'
                         },
                         body: JSON.stringify({
-                            model: 'gpt-3.5-turbo',
+                            model: input.model || DEFAULT_MODEL,
                             temperature: 0.5,
                             stream: true,
                             messages: input.messages

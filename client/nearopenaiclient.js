@@ -13,7 +13,7 @@ const config = {
     explorerUrl: `https://explorer.${networkId}.near.org`
 };
 
-export async function create_ask_ai_request_body(messages) {
+export async function create_ask_ai_request_body(messages, model) {
     const near = await connect(config);
 
     const account = await near.account(process.env.NEAR_ACCOUNT_ID);
@@ -52,13 +52,14 @@ export async function create_ask_ai_request_body(messages) {
         signed_transaction: Buffer.from(signedTx.encode()).toString('base64'),
         transaction_hash: nearApi.utils.serialize.base_encode(txHash),
         sender_account_id: accountId,
-        messages: messages
+        messages: messages,
+        model: model
     });
 }
 
-export async function ask_ai(messages) {
+export async function ask_ai(messages, model) {
     try {
-        const requestbody =  await create_ask_ai_request_body(messages);
+        const requestbody =  await create_ask_ai_request_body(messages, model);
         const airesponse = await fetch('https://near-openai.vercel.app/api/openai', {
             method: 'POST',
             body: requestbody
