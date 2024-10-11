@@ -1,0 +1,17 @@
+[package]
+name = "openai-proxy"
+authors = ["Peter Salomonsen <pjsalomonsen@gmail.com>"]
+description = ""
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1"
+futures = "0.3.31"
+spin-sdk = "3.0.1"
+url = "2.5.2"
+
+[workspace]
