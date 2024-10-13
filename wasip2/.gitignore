@@ -1,0 +1,4 @@
+target/
+.spin/
+.env
+.DS_Store
