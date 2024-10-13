@@ -236,6 +236,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
+ "serde_json",
  "spin-sdk",
  "url",
 ]

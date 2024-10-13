@@ -59,7 +59,10 @@
             const requestBody = JSON.stringify({
                 model: 'gpt-4o',
                 messages: conversation,
-                stream: true  // Important: This tells OpenAI to stream responses
+                stream: true,
+                stream_options: {
+                    include_usage: true
+                }
             });
 
             const headers = {

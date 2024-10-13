@@ -1,8 +1,0 @@
-{
-    "git": {
-        "deploymentEnabled": {
-          "main": true,
-          "wasip2/**": false
-        }
-      }
-  }
