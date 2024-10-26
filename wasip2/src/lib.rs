@@ -1,6 +1,7 @@
 use futures::{SinkExt, StreamExt};
 use spin_sdk::{
     http::{self, Headers, IncomingResponse, Method, OutgoingResponse, Request, ResponseOutparam},
+    key_value::Store,
     http_component, variables,
 };
 use serde_json::Value;
@@ -139,8 +140,20 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
     }
 }
 
+
 // Function to handle the actual proxy logic
 async fn proxy_openai(incoming_request: Request) -> anyhow::Result<IncomingResponse> {
+    let incoming_request_body: Value = serde_json::from_slice(&incoming_request.into_body()[..]).unwrap();
+    
+    let request_body = serde_json::json!({
+        "model": "gpt-4o",
+        "messages": incoming_request_body["messages"],
+        "stream": true,
+        "stream_options": {
+            "include_usage": true
+        }
+    });
+
     let outgoing_request = Request::builder()
         .method(Method::Post)
         .uri("https://api.openai.com/v1/chat/completions")
@@ -149,7 +162,7 @@ async fn proxy_openai(incoming_request: Request) -> anyhow::Result<IncomingRespo
             format!("Bearer {}", variables::get("openai_api_key").unwrap()),
         )
         .header("Content-Type", "application/json")
-        .body(incoming_request.into_body())
+        .body(request_body.to_string())
         .build();
 
     let response = match http::send::<_, IncomingResponse>(outgoing_request).await {
