@@ -1,11 +1,27 @@
 use futures::{SinkExt, StreamExt};
 use serde_json::Value;
+use serde::{Deserialize, Deserializer, Serialize};
 use spin_sdk::{
     http::{self, Headers, IncomingResponse, Method, OutgoingResponse, Request, ResponseOutparam},
     http_component,
     key_value::Store,
     variables,
 };
+
+#[derive(Deserialize, Serialize)]
+struct ConversationBalance {
+    receiver_id: String,
+    #[serde(deserialize_with = "string_to_u64")]
+    amount: u64
+}
+
+fn string_to_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    u64::from_str_radix(&s, 10).map_err(serde::de::Error::custom)
+}
 
 #[http_component]
 async fn handle_request(request: Request, response_out: ResponseOutparam) {
@@ -31,7 +47,25 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
             response_out.set(response);
         }
         (Method::Post, Some("/proxy-openai")) => {
-            match proxy_openai(request).await {
+            let incoming_request_body: Value = serde_json::from_slice(&request.into_body()[..]).unwrap();
+            let conversation_id = incoming_request_body["conversation_id"].as_str().unwrap();
+            let messages = incoming_request_body["messages"].clone();
+
+            let conversation_balance_store = Store::open_default().unwrap();
+            let mut conversation_balance: ConversationBalance = match conversation_balance_store.get(conversation_id) {
+                Ok(None) => {
+                    get_initial_token_balance_for_conversation(conversation_id).await.unwrap()
+                },
+                Ok(Some(stored_conversation_balance)) => {
+                    serde_json::from_slice(&stored_conversation_balance[..]).unwrap()
+                },
+                Err(_) => {
+                    eprintln!("Unable to get conversation balance");
+                    return server_error(response_out);
+                }
+            };
+
+            match proxy_openai(messages).await {
                 Ok(incoming_response) => {
                     let mut incoming_response_body = incoming_response.take_body_stream();
                     let outgoing_response = OutgoingResponse::new(headers);
@@ -117,6 +151,8 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                             };
                             let cost = (total_tokens as f64 / 1000.0) * cost_per_1k_tokens;
 
+                            conversation_balance.amount -= total_tokens;
+                            conversation_balance_store.set(conversation_id, serde_json::to_string(&conversation_balance).unwrap().as_bytes()).unwrap();
                             // Log the token usage and cost
                             eprintln!("Total tokens used: {}", total_tokens);
                             eprintln!("Model: {}", model);
@@ -150,14 +186,25 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
     }
 }
 
-// Function to handle the actual proxy logic
-async fn proxy_openai(incoming_request: Request) -> anyhow::Result<IncomingResponse> {
-    let incoming_request_body: Value =
-        serde_json::from_slice(&incoming_request.into_body()[..]).unwrap();
+async fn get_initial_token_balance_for_conversation(conversation_id: &str) -> anyhow::Result<ConversationBalance> {
+    let request = Request::get(format!("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id={}", conversation_id)).build();
+    let conversation_balance = match http::send::<_, IncomingResponse>(request).await {
+        Ok(resp) => {
+            Ok(serde_json::from_slice(&resp.into_body().await?[..]).unwrap())
+        },
+        Err(e) => {
+            eprintln!("Error getting initial balance for conversation: {e}");
+            return Err(anyhow::anyhow!("Error getting initial balance for conversation: {e}"));
+        }
+    }; 
+    conversation_balance
+}
 
+// Function to handle the actual proxy logic
+async fn proxy_openai(messages: Value) -> anyhow::Result<IncomingResponse> {
     let request_body = serde_json::json!({
         "model": "gpt-4o",
-        "messages": incoming_request_body["messages"],
+        "messages": messages,
         "stream": true,
         "stream_options": {
             "include_usage": true
