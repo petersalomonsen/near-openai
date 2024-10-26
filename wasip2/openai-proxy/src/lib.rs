@@ -1,10 +1,11 @@
 use futures::{SinkExt, StreamExt};
+use serde_json::Value;
 use spin_sdk::{
     http::{self, Headers, IncomingResponse, Method, OutgoingResponse, Request, ResponseOutparam},
+    http_component,
     key_value::Store,
-    http_component, variables,
+    variables,
 };
-use serde_json::Value;
 
 #[http_component]
 async fn handle_request(request: Request, response_out: ResponseOutparam) {
@@ -63,15 +64,21 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
 
                                             // Extract completion ID from the first chunk containing metadata
                                             if completion_id.is_empty() {
-                                                if let Ok(json_value) = serde_json::from_str::<Value>(json_str) {
-                                                    if let Some(id) = json_value.get("id").and_then(Value::as_str) {
+                                                if let Ok(json_value) =
+                                                    serde_json::from_str::<Value>(json_str)
+                                                {
+                                                    if let Some(id) =
+                                                        json_value.get("id").and_then(Value::as_str)
+                                                    {
                                                         completion_id = id.to_string();
                                                     }
                                                 }
                                             }
 
                                             // Extract usage information if present
-                                            if let Ok(json_value) = serde_json::from_str::<Value>(json_str) {
+                                            if let Ok(json_value) =
+                                                serde_json::from_str::<Value>(json_str)
+                                            {
                                                 let usage_info_in_json = json_value.get("usage");
                                                 if usage_info_in_json.is_some() {
                                                     usage_info = json_value.get("usage").cloned();
@@ -98,7 +105,10 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                     if let Some(usage) = usage_info {
                         if let Some(total_tokens) = usage.get("total_tokens") {
                             let total_tokens = total_tokens.as_u64().unwrap_or(0);
-                            let model = usage.get("model").and_then(Value::as_str).unwrap_or("gpt-3.5-turbo");
+                            let model = usage
+                                .get("model")
+                                .and_then(Value::as_str)
+                                .unwrap_or("gpt-3.5-turbo");
 
                             // Calculate the cost based on the model used
                             let cost_per_1k_tokens = match model {
@@ -140,11 +150,11 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
     }
 }
 
-
 // Function to handle the actual proxy logic
 async fn proxy_openai(incoming_request: Request) -> anyhow::Result<IncomingResponse> {
-    let incoming_request_body: Value = serde_json::from_slice(&incoming_request.into_body()[..]).unwrap();
-    
+    let incoming_request_body: Value =
+        serde_json::from_slice(&incoming_request.into_body()[..]).unwrap();
+
     let request_body = serde_json::json!({
         "model": "gpt-4o",
         "messages": incoming_request_body["messages"],
