@@ -1,0 +1,7 @@
+{
+   
+    "rust-analyzer.linkedProjects": [
+        "wasip2/openai-proxy/Cargo.toml",
+        "wasip2/tests/Cargo.toml"
+    ]
+}
