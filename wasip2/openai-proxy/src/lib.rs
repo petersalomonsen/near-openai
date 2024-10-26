@@ -9,6 +9,8 @@ use spin_sdk::{
     variables,
 };
 
+const MIN_TOKENS: u64 = 32;
+
 #[derive(Deserialize, Serialize)]
 struct ConversationBalance {
     receiver_id: String,
@@ -71,6 +73,10 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                     return server_error(response_out);
                 }
             };
+
+            if conversation_balance.amount < MIN_TOKENS {
+                return forbidden(response_out, "Insufficient tokens, get a refund and start a new conversation").await;
+            }
 
             match proxy_openai(messages).await {
                 Ok(incoming_response) => {
@@ -255,6 +261,18 @@ fn server_error(response_out: ResponseOutparam) {
 fn method_not_allowed(response_out: ResponseOutparam) {
     eprintln!("Method not allowed");
     respond(405, response_out)
+}
+
+async fn forbidden(response_out: ResponseOutparam, reason: &str) {
+    eprintln!("Forbidden: {}", reason);
+    let response = OutgoingResponse::new(Headers::new());
+    response.set_status_code(403).unwrap();
+    if let Err(e) = response.take_body().send(reason.as_bytes().to_vec()).await {
+        eprintln!("Error writing body content: {e}");
+        server_error(response_out);
+        return;
+    }
+    response_out.set(response);
 }
 
 fn respond(status: u16, response_out: ResponseOutparam) {

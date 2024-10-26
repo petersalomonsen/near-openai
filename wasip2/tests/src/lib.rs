@@ -33,6 +33,11 @@ fn handle_near_ai_token_request() {
     unknown_conversation_response.set_status_code(400).unwrap();
 
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017819", http_handler::ResponseHandler::Response(unknown_conversation_response));
+
+    let insufficient_funds_response = http::types::OutgoingResponse::new(http::types::Headers::new());
+    insufficient_funds_response.write_body(json!({"receiver_id":"aiuser.testnet","amount":"26"}).to_string().as_bytes());
+
+    http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017820", http_handler::ResponseHandler::Response(insufficient_funds_response));
 }
 
 #[spin_test]
@@ -93,4 +98,27 @@ fn openai_request_unknown_conversation() {
     let response = spin_test_sdk::perform_request(request);
     assert_eq!(response.status(), 500);
     
+}
+
+#[spin_test]
+fn openai_request_insufficient_funds() {
+    spin_test_virt::variables::set("openai_api_key", "hello");
+
+    handle_openai_request();
+    handle_near_ai_token_request();
+
+    let request = http::types::OutgoingRequest::new(http::types::Headers::new());
+    request.set_method(&http::types::Method::Post).unwrap();
+    request.set_path_with_query(Some("/proxy-openai")).unwrap();
+    request.body().unwrap().write_bytes(json!(
+        {
+            "conversation_id": "aiuser.testnet_1729432017820",
+            "messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"hello"}]
+    }).to_string().as_bytes());
+    let response = spin_test_sdk::perform_request(request);
+
+    assert_eq!(response.status(), 403);
+    assert!(response.body_as_string().unwrap().contains("Insufficient tokens"));
+    let store = spin_test_virt::key_value::Store::open("default");
+    assert_eq!(store.get("aiuser.testnet_1729432017820"), None);
 }
