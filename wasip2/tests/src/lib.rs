@@ -24,7 +24,7 @@ data: {\"id\":\"chatcmpl-AMaFCyZmtLWFTUrXg0ZyEI9gz0wbj\",\"object\":\"chat.compl
 
 fn handle_near_ai_token_request() {
     let response = http::types::OutgoingResponse::new(http::types::Headers::new());
-    response.write_body(json!({"receiver_id":"aiuser.testnet","amount":"2000"}).to_string().as_bytes());
+    response.write_body(json!({"receiver_id":"aiuser.testnet","amount":"256000"}).to_string().as_bytes());
     
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017818", http_handler::ResponseHandler::Response(response));
 
@@ -77,7 +77,7 @@ fn openai_request() {
     let store = spin_test_virt::key_value::Store::open("default");
     let stored_conversation_balance: serde_json::Value = serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
 
-    assert_eq!(stored_conversation_balance["amount"], (2000-27) as u64);
+    assert_eq!(stored_conversation_balance["amount"], (256000-27) as u64);
 }
 
 #[spin_test]
@@ -101,7 +101,7 @@ fn openai_request_unknown_conversation() {
 }
 
 #[spin_test]
-fn openai_request_insufficient_funds() {
+fn openai_request_insufficient_funds_deposited() {
     spin_test_virt::variables::set("openai_api_key", "hello");
 
     handle_openai_request();
@@ -121,4 +121,34 @@ fn openai_request_insufficient_funds() {
     assert!(response.body_as_string().unwrap().contains("Insufficient tokens"));
     let store = spin_test_virt::key_value::Store::open("default");
     assert_eq!(store.get("aiuser.testnet_1729432017820"), None);
+}
+
+#[spin_test]
+fn openai_request_insufficient_funds_ongoing_conversation() {
+    spin_test_virt::variables::set("openai_api_key", "hello");
+
+    handle_openai_request();
+
+    let store = spin_test_virt::key_value::Store::open("default");
+
+    store.set("aiuser.testnet_1729432017818", json!({
+        "receiver_id": "aiuser.testnet",
+        "amount": "128000"
+    }).to_string().as_bytes());
+
+    let request = http::types::OutgoingRequest::new(http::types::Headers::new());
+    request.set_method(&http::types::Method::Post).unwrap();
+    request.set_path_with_query(Some("/proxy-openai")).unwrap();
+    request.body().unwrap().write_bytes(json!(
+        {
+            "conversation_id": "aiuser.testnet_1729432017818",
+            "messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"hello"}]
+    }).to_string().as_bytes());
+    let response = spin_test_sdk::perform_request(request);
+
+    assert_eq!(response.status(), 403);
+    assert!(response.body_as_string().unwrap().contains("Insufficient tokens"));
+
+    let stored_conversation_balance: serde_json::Value = serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
+    assert_eq!(stored_conversation_balance["amount"], "128000");
 }

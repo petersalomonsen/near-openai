@@ -9,7 +9,7 @@ use spin_sdk::{
     variables,
 };
 
-const MIN_TOKENS: u64 = 32;
+const MIN_TOKENS: u64 = 128_000 + 16384;
 
 #[derive(Deserialize, Serialize)]
 struct ConversationBalance {
