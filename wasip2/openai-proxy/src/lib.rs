@@ -1,3 +1,4 @@
+use anyhow::Error;
 use futures::{SinkExt, StreamExt};
 use serde_json::Value;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -54,7 +55,13 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
             let conversation_balance_store = Store::open_default().unwrap();
             let mut conversation_balance: ConversationBalance = match conversation_balance_store.get(conversation_id) {
                 Ok(None) => {
-                    get_initial_token_balance_for_conversation(conversation_id).await.unwrap()
+                    match get_initial_token_balance_for_conversation(conversation_id).await {
+                        Ok(result) => result,
+                        Err(_) => {
+                            eprintln!("Unable to get conversation balance");
+                            return server_error(response_out);
+                        }
+                    }
                 },
                 Ok(Some(stored_conversation_balance)) => {
                     serde_json::from_slice(&stored_conversation_balance[..]).unwrap()
@@ -188,16 +195,22 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
 
 async fn get_initial_token_balance_for_conversation(conversation_id: &str) -> anyhow::Result<ConversationBalance> {
     let request = Request::get(format!("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id={}", conversation_id)).build();
-    let conversation_balance = match http::send::<_, IncomingResponse>(request).await {
+    match http::send::<_, IncomingResponse>(request).await {
         Ok(resp) => {
-            Ok(serde_json::from_slice(&resp.into_body().await?[..]).unwrap())
+            let result: Result<ConversationBalance, serde_json::Error> = serde_json::from_slice(&resp.into_body().await?[..]);
+            match result {
+                Ok(result) => Ok(result),
+                Err(e) => {
+                    eprintln!("Error getting initial balance for conversation: {e}");
+                    return Err(anyhow::anyhow!("Error getting initial balance for conversation: {e}"));
+                }
+            }
         },
         Err(e) => {
             eprintln!("Error getting initial balance for conversation: {e}");
             return Err(anyhow::anyhow!("Error getting initial balance for conversation: {e}"));
         }
-    }; 
-    conversation_balance
+    }
 }
 
 // Function to handle the actual proxy logic
