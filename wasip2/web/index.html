@@ -35,18 +35,41 @@
 </head>
 <body>
     <h1>OpenAI Proxy Streaming UI</h1>
+    <input id="conversation_id" placeholder="conversation id" /><button onclick="refund()">Stop conversation and refund tokens</button><br />
     <div id="messages"></div>
     <div id="question-container">
+        
         <textarea id="question" rows="4" placeholder="Type your question here..."></textarea>
         <button onclick="sendQuestion()">Ask OpenAI</button>
+        
     </div>
-
+    <div>
+        <pre>
+            <code id="refund_message"></code>
+        </pre>
+    </div>
     <script>
-        const proxyUrl = 'http://localhost:3000/proxy-openai';  // Replace with your actual Spin proxy URL
+        const baseUrl = 'http://localhost:3000';
+        const proxyUrl = `${baseUrl}/proxy-openai`;  // Replace with your actual Spin proxy URL
         let conversation = [
             { role: 'system', content: 'You are a helpful assistant.' }
         ];
 
+        async function refund() {
+            const requestBody = JSON.stringify({
+                conversation_id: document.getElementById('conversation_id').value
+            });
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            const response = await fetch(`${baseUrl}/refund-conversation`, {
+                method: 'POST',
+                headers: headers,
+                body: requestBody
+            });
+            refund_message.innerHTML =  JSON.stringify(await response.json(), null, 1);
+        }
         async function sendQuestion() {
             const question = document.getElementById('question').value;
             const messagesDiv = document.getElementById('messages');
@@ -57,6 +80,7 @@
             messagesDiv.innerHTML += `<strong>User:</strong> ${question}<br>`;
 
             const requestBody = JSON.stringify({
+                conversation_id: document.getElementById('conversation_id').value,
                 messages: conversation
             });
 
@@ -74,7 +98,7 @@
 
                 // Check if the response is OK
                 if (!response.ok) {
-                    messagesDiv.innerHTML += '<strong>Assistant:</strong> Failed to fetch from proxy: ' + response.statusText + '<br>';
+                    messagesDiv.innerHTML += '<strong>Assistant:</strong> Failed to fetch from proxy: ' + response.statusText + '<br>'+ (await response.text()) + '<br>';
                     return;
                 }
 

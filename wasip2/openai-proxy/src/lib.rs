@@ -83,9 +83,8 @@ fn get_signing_key(b58_key: &str) -> SigningKey {
     SigningKey::from_bytes(&key_bytes)
 }
 
-#[http_component]
-async fn handle_request(request: Request, response_out: ResponseOutparam) {
-    let headers = Headers::from_list(&[
+fn cors_headers() -> Headers {
+    Headers::from_list(&[
         (
             "Access-Control-Allow-Origin".to_string(),
             "*".to_string().into_bytes(),
@@ -98,8 +97,12 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
             "Access-Control-Allow-Headers".to_string(),
             "Content-Type, Authorization".to_string().into_bytes(),
         ),
-    ])
-    .unwrap();
+    ]).unwrap()
+}
+
+#[http_component]
+async fn handle_request(request: Request, response_out: ResponseOutparam) {
+    let headers = cors_headers();
     match (request.method(), request.path_and_query().as_deref()) {
         (Method::Options, Some("/refund-conversation")) => {
             let response = OutgoingResponse::new(headers);
@@ -431,7 +434,7 @@ fn method_not_allowed(response_out: ResponseOutparam) {
 
 async fn forbidden(response_out: ResponseOutparam, reason: &str) {
     eprintln!("Forbidden: {}", reason);
-    let response = OutgoingResponse::new(Headers::new());
+    let response = OutgoingResponse::new(cors_headers());
     response.set_status_code(403).unwrap();
     if let Err(e) = response.take_body().send(reason.as_bytes().to_vec()).await {
         eprintln!("Error writing body content: {e}");
@@ -442,7 +445,7 @@ async fn forbidden(response_out: ResponseOutparam, reason: &str) {
 }
 
 fn respond(status: u16, response_out: ResponseOutparam) {
-    let response = OutgoingResponse::new(Headers::new());
+    let response = OutgoingResponse::new(cors_headers());
     response.set_status_code(status).unwrap();
 
     response_out.set(response);
