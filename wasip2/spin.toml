@@ -22,9 +22,11 @@ watch = ["src/**/*.rs", "Cargo.toml"]
 
 [variables]
 openai_api_key = { required = true }
+refund_signing_key = { required = true }
 
 [component.openai-proxy.variables]
 openai_api_key = "{{ openai_api_key }}"
+refund_signing_key = "{{ refund_signing_key }}"
 
 [component.openai-proxy.tool.spin-test]
 source = "tests/target/wasm32-wasi/release/tests.wasm"

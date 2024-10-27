@@ -1,4 +1,6 @@
+use ed25519_dalek::{Signature, VerifyingKey};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use spin_test_sdk::{
     bindings::{
         fermyon::{spin_test_virt, spin_wasi_virt::http_handler},
@@ -9,6 +11,8 @@ use spin_test_sdk::{
     },
     spin_test,
 };
+
+const SIGNING_PUBLIC_KEY: &str = "63LxSTBisoUfp3Gu7eGY8kAVcRAmZacZjceJ2jNeGZLH";
 
 fn handle_openai_request() {
     let openai_response = http::types::OutgoingResponse::new(http::types::Headers::new());
@@ -53,6 +57,14 @@ fn handle_near_ai_token_request() {
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017820", http_handler::ResponseHandler::Response(insufficient_funds_response));
 }
 
+fn set_variables() {
+    spin_test_virt::variables::set(
+        "refund_signing_key",
+        "5J4fAKqUQj1RT3JD2d58gWiXBNGavrZQPYbNMJwDjHnhF8J8KVC1UHxVu3f7Ng2tFkA9fXcECNW9xuf7iZpcYh1X",
+    );
+    spin_test_virt::variables::set("openai_api_key", "hello");
+}
+
 #[spin_test]
 fn test_hello_api() {
     // Perform the request
@@ -70,7 +82,7 @@ fn test_hello_api() {
 
 #[spin_test]
 fn openai_request() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     handle_openai_request();
     handle_near_ai_token_request();
@@ -95,12 +107,15 @@ fn openai_request() {
         u64::from_str_radix(stored_conversation_balance["amount"].as_str().unwrap(), 10).unwrap(),
         (256000 - 27) as u64
     );
-    assert_eq!(stored_conversation_balance["locked_for_ongoing_request"], false);
+    assert_eq!(
+        stored_conversation_balance["locked_for_ongoing_request"],
+        false
+    );
 }
 
 #[spin_test]
 fn openai_request_unknown_conversation() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     handle_openai_request();
     handle_near_ai_token_request();
@@ -119,7 +134,7 @@ fn openai_request_unknown_conversation() {
 
 #[spin_test]
 fn openai_request_insufficient_funds_deposited() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     handle_openai_request();
     handle_near_ai_token_request();
@@ -148,7 +163,7 @@ fn openai_request_insufficient_funds_deposited() {
 
 #[spin_test]
 fn openai_request_insufficient_funds_ongoing_conversation() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     handle_openai_request();
 
@@ -187,7 +202,7 @@ fn openai_request_insufficient_funds_ongoing_conversation() {
 
 #[spin_test]
 fn concurrent_requests_should_throw_error() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     handle_openai_request();
 
@@ -227,7 +242,7 @@ fn concurrent_requests_should_throw_error() {
 
 #[spin_test]
 fn request_refund() {
-    spin_test_virt::variables::set("openai_api_key", "hello");
+    set_variables();
 
     let store = spin_test_virt::key_value::Store::open("default");
 
@@ -244,15 +259,48 @@ fn request_refund() {
 
     let request = http::types::OutgoingRequest::new(http::types::Headers::new());
     request.set_method(&http::types::Method::Post).unwrap();
-    request.set_path_with_query(Some("/refund-conversation")).unwrap();
-    request.body().unwrap().write_bytes(json!(
-        {
-            "conversation_id": "aiuser.testnet_1729432017818"
-    }).to_string().as_bytes());
+    request
+        .set_path_with_query(Some("/refund-conversation"))
+        .unwrap();
+    request.body().unwrap().write_bytes(
+        json!(
+            {
+                "conversation_id": "aiuser.testnet_1729432017818"
+        })
+        .to_string()
+        .as_bytes(),
+    );
     let response = spin_test_sdk::perform_request(request);
 
     assert_eq!(response.status(), 200);
     let result: Value = serde_json::from_str(response.body_as_string().unwrap().as_str()).unwrap();
-    assert_eq!(result["receiver_id"].as_str().unwrap(), "aiuser.testnet");
-    assert_eq!(result["refund_amount"].as_str().unwrap(), "128000");
+    let refund_message_str = result["refund_message"].as_str().unwrap();
+    let refund_message: Value =
+        serde_json::from_str(result["refund_message"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        refund_message["receiver_id"].as_str().unwrap(),
+        "aiuser.testnet"
+    );
+    assert_eq!(refund_message["refund_amount"].as_str().unwrap(), "128000");
+
+    let public_key_bytes: [u8; 32] = bs58::decode(SIGNING_PUBLIC_KEY).into_vec().unwrap()[..32]
+        .try_into()
+        .unwrap();
+    let public_key = VerifyingKey::from_bytes(&public_key_bytes).unwrap();
+    let mut hasher = Sha256::new();
+    hasher.update(refund_message_str.as_bytes());
+    let hashed_message = hasher.finalize();
+
+    let signature_vec = result["signature"]
+        .as_array()
+        .expect("Expected 'signature' to be an array")
+        .iter()
+        .map(|v| v.as_u64().expect("Expected each item to be a number") as u8)
+        .collect::<Vec<u8>>();
+
+    let mut signature: [u8; 64] = [0u8; 64];
+    signature.copy_from_slice(&signature_vec[..64]);
+    assert!(public_key
+        .verify_strict(&hashed_message, &Signature::from_bytes(&signature))
+        .is_ok());
 }

@@ -1,8 +1,8 @@
-use std::cell::Ref;
-
+use ed25519_dalek::{ed25519::signature::SignerMut, SigningKey};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use spin_sdk::{
     http::{self, Headers, IncomingResponse, Method, OutgoingResponse, Request, ResponseOutparam},
     http_component,
@@ -20,7 +20,7 @@ struct ConversationBalance {
     #[serde(default)]
     locked_for_ongoing_request: bool,
     #[serde(default)]
-    refund_requested: bool
+    refund_requested: bool,
 }
 
 impl Default for ConversationBalance {
@@ -29,17 +29,32 @@ impl Default for ConversationBalance {
             receiver_id: Default::default(),
             amount: 0,
             locked_for_ongoing_request: true,
-            refund_requested: false
+            refund_requested: false,
         }
     }
 }
 
-#[derive(Deserialize, Serialize)]
-struct RefundRequest {
-    conversation_id: String,    
+#[derive(Serialize)]
+struct RefundMessage {
+    conversation_id: String,
     receiver_id: String,
-    #[serde(deserialize_with = "string_to_u64", serialize_with = "u64_to_string")]
-    refund_amount: u64,    
+    #[serde(serialize_with = "u64_to_string")]
+    refund_amount: u64,
+}
+
+#[derive(Serialize)]
+struct RefundRequest {
+    refund_message: String,
+    #[serde(serialize_with = "serialize_signature")]
+    signature: [u8; 64],
+}
+
+// Custom serialization function for [u8; 64]
+fn serialize_signature<S>(signature: &[u8; 64], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_bytes(signature)
 }
 
 // Custom serialization function for "amount" field
@@ -56,6 +71,16 @@ where
 {
     let s = String::deserialize(deserializer)?;
     u64::from_str_radix(&s, 10).map_err(serde::de::Error::custom)
+}
+
+fn get_signing_key(b58_key: &str) -> SigningKey {
+    // Decode the base58 string to bytes
+    let key_bytes: [u8; 32] = bs58::decode(b58_key).into_vec().unwrap()[..32]
+        .try_into()
+        .unwrap();
+
+    // Create the SigningKey from bytes
+    SigningKey::from_bytes(&key_bytes)
 }
 
 #[http_component]
@@ -111,16 +136,38 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                     "Refund has already been requested for this conversation",
                 )
                 .await;
-            }   
-            let refund_request = RefundRequest {
+            }
+            let refund_message = RefundMessage {
                 conversation_id: conversation_id.to_string(),
-                receiver_id: conversation_balance.receiver_id,
-                refund_amount: conversation_balance.amount
+                receiver_id: conversation_balance.receiver_id.clone(),
+                refund_amount: conversation_balance.amount,
             };
             let response = OutgoingResponse::new(headers);
             response.set_status_code(200).unwrap();
-            let bytes = serde_json::to_string(&refund_request).unwrap().into_bytes();
-            response_out.set_with_body(response, bytes).await.unwrap();
+
+            let refund_message_str = serde_json::to_string(&refund_message).unwrap();
+            let bytes = refund_message_str.clone().into_bytes();
+            let mut hasher = Sha256::new();
+            hasher.update(bytes);
+            let hashed_message = hasher.finalize();
+
+            let mut signing_key =
+                get_signing_key(variables::get("refund_signing_key").unwrap().as_str());
+            let signature = signing_key.sign(&hashed_message);
+
+            let refund_request = RefundRequest {
+                refund_message: refund_message_str,
+                signature: signature.to_bytes(),
+            };
+            response_out
+                .set_with_body(response, serde_json::to_vec(&refund_request).unwrap())
+                .await
+                .unwrap();
+
+            conversation_balance.refund_requested = true;
+            conversation_balance_store
+                .set_json(conversation_id, &conversation_balance)
+                .unwrap();
         }
         (Method::Options, Some("/proxy-openai")) => {
             let response = OutgoingResponse::new(headers);
@@ -163,6 +210,13 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                 .await;
             }
 
+            if conversation_balance.refund_requested {
+                return forbidden(
+                    response_out,
+                    "Refund has been requested for this conversation",
+                )
+                .await;
+            }
             conversation_balance.locked_for_ongoing_request = true;
             conversation_balance_store
                 .set_json(conversation_id, &conversation_balance)
