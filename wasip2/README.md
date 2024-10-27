@@ -4,6 +4,8 @@ This folder contains a [Spin](https://www.fermyon.com/spin) application, based o
 
 There is a simple example of a web client in the [web](./web/) folder.
 
+The application will keep track of of token usage per conversation in the built-in key-value storage of Spin. The initial balance for a conversation is retrieved from the Fungible Token smart contract.
+
 To launch the application, make sure to have the Spin SDK installed. Set the environment variable `SPIN_VARIABLE_OPENAI_API_KEY` to your OpenAI API key.
 
 Then run the following commands:

@@ -2,7 +2,10 @@ use serde_json::json;
 use spin_test_sdk::{
     bindings::{
         fermyon::{spin_test_virt, spin_wasi_virt::http_handler},
-        wasi::{self, http::{self, types::OutgoingResponse}},
+        wasi::{
+            self,
+            http::{self, types::OutgoingResponse},
+        },
     },
     spin_test,
 };
@@ -24,18 +27,28 @@ data: {\"id\":\"chatcmpl-AMaFCyZmtLWFTUrXg0ZyEI9gz0wbj\",\"object\":\"chat.compl
 
 fn handle_near_ai_token_request() {
     let response = http::types::OutgoingResponse::new(http::types::Headers::new());
-    response.write_body(json!({"receiver_id":"aiuser.testnet","amount":"256000"}).to_string().as_bytes());
-    
+    response.write_body(
+        json!({"receiver_id":"aiuser.testnet","amount":"256000"})
+            .to_string()
+            .as_bytes(),
+    );
+
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017818", http_handler::ResponseHandler::Response(response));
 
-    let unknown_conversation_response = http::types::OutgoingResponse::new(http::types::Headers::new());
+    let unknown_conversation_response =
+        http::types::OutgoingResponse::new(http::types::Headers::new());
     unknown_conversation_response.write_body("invalid json response body at https://rpc.web4.testnet.page/account/aitoken.testnet/view/view_js_func reason: Unexpected end of JSON input\n".as_bytes());
     unknown_conversation_response.set_status_code(400).unwrap();
 
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017819", http_handler::ResponseHandler::Response(unknown_conversation_response));
 
-    let insufficient_funds_response = http::types::OutgoingResponse::new(http::types::Headers::new());
-    insufficient_funds_response.write_body(json!({"receiver_id":"aiuser.testnet","amount":"26"}).to_string().as_bytes());
+    let insufficient_funds_response =
+        http::types::OutgoingResponse::new(http::types::Headers::new());
+    insufficient_funds_response.write_body(
+        json!({"receiver_id":"aiuser.testnet","amount":"26"})
+            .to_string()
+            .as_bytes(),
+    );
 
     http_handler::set_response("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id=aiuser.testnet_1729432017820", http_handler::ResponseHandler::Response(insufficient_funds_response));
 }
@@ -75,9 +88,13 @@ fn openai_request() {
     assert_eq!(response.status(), 200);
     assert!(response.body_as_string().unwrap().contains("[DONE]\n\n"));
     let store = spin_test_virt::key_value::Store::open("default");
-    let stored_conversation_balance: serde_json::Value = serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
+    let stored_conversation_balance: serde_json::Value =
+        serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
 
-    assert_eq!(stored_conversation_balance["amount"], (256000-27) as u64);
+    assert_eq!(
+        u64::from_str_radix(stored_conversation_balance["amount"].as_str().unwrap(), 10).unwrap(),
+        (256000 - 27) as u64
+    );
 }
 
 #[spin_test]
@@ -97,7 +114,6 @@ fn openai_request_unknown_conversation() {
     }).to_string().as_bytes());
     let response = spin_test_sdk::perform_request(request);
     assert_eq!(response.status(), 500);
-    
 }
 
 #[spin_test]
@@ -118,9 +134,15 @@ fn openai_request_insufficient_funds_deposited() {
     let response = spin_test_sdk::perform_request(request);
 
     assert_eq!(response.status(), 403);
-    assert!(response.body_as_string().unwrap().contains("Insufficient tokens"));
+    assert!(response
+        .body_as_string()
+        .unwrap()
+        .contains("Insufficient tokens"));
     let store = spin_test_virt::key_value::Store::open("default");
-    assert_eq!(store.get("aiuser.testnet_1729432017820"), None);
+
+    let stored_conversation_balance: serde_json::Value =
+        serde_json::from_slice(&store.get("aiuser.testnet_1729432017820").unwrap()[..]).unwrap();
+    assert_eq!(stored_conversation_balance["amount"], "26");
 }
 
 #[spin_test]
@@ -131,10 +153,15 @@ fn openai_request_insufficient_funds_ongoing_conversation() {
 
     let store = spin_test_virt::key_value::Store::open("default");
 
-    store.set("aiuser.testnet_1729432017818", json!({
-        "receiver_id": "aiuser.testnet",
-        "amount": "128000"
-    }).to_string().as_bytes());
+    store.set(
+        "aiuser.testnet_1729432017818",
+        json!({
+            "receiver_id": "aiuser.testnet",
+            "amount": "128000"
+        })
+        .to_string()
+        .as_bytes(),
+    );
 
     let request = http::types::OutgoingRequest::new(http::types::Headers::new());
     request.set_method(&http::types::Method::Post).unwrap();
@@ -147,8 +174,12 @@ fn openai_request_insufficient_funds_ongoing_conversation() {
     let response = spin_test_sdk::perform_request(request);
 
     assert_eq!(response.status(), 403);
-    assert!(response.body_as_string().unwrap().contains("Insufficient tokens"));
+    assert!(response
+        .body_as_string()
+        .unwrap()
+        .contains("Insufficient tokens"));
 
-    let stored_conversation_balance: serde_json::Value = serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
+    let stored_conversation_balance: serde_json::Value =
+        serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
     assert_eq!(stored_conversation_balance["amount"], "128000");
 }

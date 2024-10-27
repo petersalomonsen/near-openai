@@ -1,7 +1,6 @@
-use anyhow::Error;
 use futures::{SinkExt, StreamExt};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
-use serde::{Deserialize, Deserializer, Serialize};
 use spin_sdk::{
     http::{self, Headers, IncomingResponse, Method, OutgoingResponse, Request, ResponseOutparam},
     http_component,
@@ -14,8 +13,28 @@ const MIN_TOKENS: u64 = 128_000 + 16384;
 #[derive(Deserialize, Serialize)]
 struct ConversationBalance {
     receiver_id: String,
-    #[serde(deserialize_with = "string_to_u64")]
-    amount: u64
+    #[serde(deserialize_with = "string_to_u64", serialize_with = "u64_to_string")]
+    amount: u64,
+    #[serde(default)]
+    locked_for_ongoing_request: bool,
+}
+
+impl Default for ConversationBalance {
+    fn default() -> Self {
+        Self {
+            receiver_id: Default::default(),
+            amount: 0,
+            locked_for_ongoing_request: true,
+        }
+    }
+}
+
+// Custom serialization function for "amount" field
+fn u64_to_string<S>(amount: &u64, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&amount.to_string())
 }
 
 fn string_to_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
@@ -50,32 +69,56 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
             response_out.set(response);
         }
         (Method::Post, Some("/proxy-openai")) => {
-            let incoming_request_body: Value = serde_json::from_slice(&request.into_body()[..]).unwrap();
+            let incoming_request_body: Value =
+                serde_json::from_slice(&request.into_body()[..]).unwrap();
             let conversation_id = incoming_request_body["conversation_id"].as_str().unwrap();
             let messages = incoming_request_body["messages"].clone();
 
             let conversation_balance_store = Store::open_default().unwrap();
-            let mut conversation_balance: ConversationBalance = match conversation_balance_store.get(conversation_id) {
-                Ok(None) => {
-                    match get_initial_token_balance_for_conversation(conversation_id).await {
-                        Ok(result) => result,
-                        Err(_) => {
-                            eprintln!("Unable to get conversation balance");
-                            return server_error(response_out);
+            let mut conversation_balance: ConversationBalance =
+                match conversation_balance_store.get_json(conversation_id) {
+                    Ok(None) => {
+                        conversation_balance_store
+                            .set_json(conversation_id, &ConversationBalance::default())
+                            .unwrap();
+                        match get_initial_token_balance_for_conversation(conversation_id).await {
+                            Ok(result) => result,
+                            Err(_) => {
+                                eprintln!("Unable to get conversation balance");
+                                return server_error(response_out);
+                            }
                         }
                     }
-                },
-                Ok(Some(stored_conversation_balance)) => {
-                    serde_json::from_slice(&stored_conversation_balance[..]).unwrap()
-                },
-                Err(_) => {
-                    eprintln!("Unable to get conversation balance");
-                    return server_error(response_out);
-                }
-            };
+                    Ok(Some(stored_conversation_balance)) => stored_conversation_balance,
+                    Err(_) => {
+                        eprintln!("Unable to get conversation balance");
+                        return server_error(response_out);
+                    }
+                };
+
+            if conversation_balance.locked_for_ongoing_request {
+                return forbidden(
+                    response_out,
+                    "There is already an ongoing request for this conversation",
+                )
+                .await;
+            }
+
+            conversation_balance.locked_for_ongoing_request = true;
+            conversation_balance_store
+                .set_json(conversation_id, &conversation_balance)
+                .unwrap();
 
             if conversation_balance.amount < MIN_TOKENS {
-                return forbidden(response_out, "Insufficient tokens, get a refund and start a new conversation").await;
+                return forbidden(
+                    response_out,
+                    format!(
+                        "Insufficient tokens ( {} / {}), get a refund and start a new conversation",
+                        conversation_balance.amount, MIN_TOKENS
+                    )
+                    .as_str(),
+                )
+                .await;
             }
 
             match proxy_openai(messages).await {
@@ -165,7 +208,10 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                             let cost = (total_tokens as f64 / 1000.0) * cost_per_1k_tokens;
 
                             conversation_balance.amount -= total_tokens;
-                            conversation_balance_store.set(conversation_id, serde_json::to_string(&conversation_balance).unwrap().as_bytes()).unwrap();
+                            conversation_balance.locked_for_ongoing_request = false;
+                            conversation_balance_store
+                                .set_json(conversation_id, &conversation_balance)
+                                .unwrap();
                             // Log the token usage and cost
                             eprintln!("Total tokens used: {}", total_tokens);
                             eprintln!("Model: {}", model);
@@ -199,22 +245,29 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
     }
 }
 
-async fn get_initial_token_balance_for_conversation(conversation_id: &str) -> anyhow::Result<ConversationBalance> {
+async fn get_initial_token_balance_for_conversation(
+    conversation_id: &str,
+) -> anyhow::Result<ConversationBalance> {
     let request = Request::get(format!("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id={}", conversation_id)).build();
     match http::send::<_, IncomingResponse>(request).await {
         Ok(resp) => {
-            let result: Result<ConversationBalance, serde_json::Error> = serde_json::from_slice(&resp.into_body().await?[..]);
+            let result: Result<ConversationBalance, serde_json::Error> =
+                serde_json::from_slice(&resp.into_body().await?[..]);
             match result {
                 Ok(result) => Ok(result),
                 Err(e) => {
                     eprintln!("Error getting initial balance for conversation: {e}");
-                    return Err(anyhow::anyhow!("Error getting initial balance for conversation: {e}"));
+                    return Err(anyhow::anyhow!(
+                        "Error getting initial balance for conversation: {e}"
+                    ));
                 }
             }
-        },
+        }
         Err(e) => {
             eprintln!("Error getting initial balance for conversation: {e}");
-            return Err(anyhow::anyhow!("Error getting initial balance for conversation: {e}"));
+            return Err(anyhow::anyhow!(
+                "Error getting initial balance for conversation: {e}"
+            ));
         }
     }
 }
