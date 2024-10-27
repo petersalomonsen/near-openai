@@ -1,3 +1,5 @@
+use std::cell::Ref;
+
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -17,6 +19,8 @@ struct ConversationBalance {
     amount: u64,
     #[serde(default)]
     locked_for_ongoing_request: bool,
+    #[serde(default)]
+    refund_requested: bool
 }
 
 impl Default for ConversationBalance {
@@ -25,8 +29,17 @@ impl Default for ConversationBalance {
             receiver_id: Default::default(),
             amount: 0,
             locked_for_ongoing_request: true,
+            refund_requested: false
         }
     }
+}
+
+#[derive(Deserialize, Serialize)]
+struct RefundRequest {
+    conversation_id: String,    
+    receiver_id: String,
+    #[serde(deserialize_with = "string_to_u64", serialize_with = "u64_to_string")]
+    refund_amount: u64,    
 }
 
 // Custom serialization function for "amount" field
@@ -63,6 +76,52 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
     ])
     .unwrap();
     match (request.method(), request.path_and_query().as_deref()) {
+        (Method::Options, Some("/refund-conversation")) => {
+            let response = OutgoingResponse::new(headers);
+            response.set_status_code(200).unwrap();
+            response_out.set(response);
+        }
+        (Method::Post, Some("/refund-conversation")) => {
+            let incoming_request_body: Value =
+                serde_json::from_slice(&request.into_body()[..]).unwrap();
+            let conversation_id = incoming_request_body["conversation_id"].as_str().unwrap();
+            let conversation_balance_store = Store::open_default().unwrap();
+            let mut conversation_balance: ConversationBalance =
+                match conversation_balance_store.get_json(conversation_id) {
+                    Ok(None) => {
+                        return forbidden(response_out, "Conversation does not exist").await;
+                    }
+                    Ok(Some(stored_conversation_balance)) => stored_conversation_balance,
+                    Err(_) => {
+                        eprintln!("Unable to get conversation balance");
+                        return server_error(response_out);
+                    }
+                };
+
+            if conversation_balance.locked_for_ongoing_request {
+                return forbidden(
+                    response_out,
+                    "There is already an ongoing request for this conversation",
+                )
+                .await;
+            }
+            if conversation_balance.refund_requested {
+                return forbidden(
+                    response_out,
+                    "Refund has already been requested for this conversation",
+                )
+                .await;
+            }   
+            let refund_request = RefundRequest {
+                conversation_id: conversation_id.to_string(),
+                receiver_id: conversation_balance.receiver_id,
+                refund_amount: conversation_balance.amount
+            };
+            let response = OutgoingResponse::new(headers);
+            response.set_status_code(200).unwrap();
+            let bytes = serde_json::to_string(&refund_request).unwrap().into_bytes();
+            response_out.set_with_body(response, bytes).await.unwrap();
+        }
         (Method::Options, Some("/proxy-openai")) => {
             let response = OutgoingResponse::new(headers);
             response.set_status_code(200).unwrap();

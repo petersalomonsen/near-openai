@@ -1,4 +1,4 @@
-use serde_json::json;
+use serde_json::{json, Value};
 use spin_test_sdk::{
     bindings::{
         fermyon::{spin_test_virt, spin_wasi_virt::http_handler},
@@ -223,4 +223,36 @@ fn concurrent_requests_should_throw_error() {
     let stored_conversation_balance: serde_json::Value =
         serde_json::from_slice(&store.get("aiuser.testnet_1729432017818").unwrap()[..]).unwrap();
     assert_eq!(stored_conversation_balance["amount"], "128000");
+}
+
+#[spin_test]
+fn request_refund() {
+    spin_test_virt::variables::set("openai_api_key", "hello");
+
+    let store = spin_test_virt::key_value::Store::open("default");
+
+    store.set(
+        "aiuser.testnet_1729432017818",
+        json!({
+            "receiver_id": "aiuser.testnet",
+            "amount": "128000",
+            "locked_for_ongoing_request": false
+        })
+        .to_string()
+        .as_bytes(),
+    );
+
+    let request = http::types::OutgoingRequest::new(http::types::Headers::new());
+    request.set_method(&http::types::Method::Post).unwrap();
+    request.set_path_with_query(Some("/refund-conversation")).unwrap();
+    request.body().unwrap().write_bytes(json!(
+        {
+            "conversation_id": "aiuser.testnet_1729432017818"
+    }).to_string().as_bytes());
+    let response = spin_test_sdk::perform_request(request);
+
+    assert_eq!(response.status(), 200);
+    let result: Value = serde_json::from_str(response.body_as_string().unwrap().as_str()).unwrap();
+    assert_eq!(result["receiver_id"].as_str().unwrap(), "aiuser.testnet");
+    assert_eq!(result["refund_amount"].as_str().unwrap(), "128000");
 }
