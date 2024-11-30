@@ -19,6 +19,11 @@ jobs:
           rustup target add wasm32-wasi
           cargo install cargo-component --locked
           spin plugin install -y -u https://github.com/fermyon/spin-test/releases/download/canary/spin-test.json
+      - name: Check formatting
+        working-directory: wasip2
+        run: |
+          (cd openai-proxy && cargo fmt --check)
+          (cd tests && cargo fmt --check)
       - name: Build project
         working-directory: wasip2
         run: |

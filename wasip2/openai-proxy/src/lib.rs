@@ -97,7 +97,8 @@ fn cors_headers() -> Headers {
             "Access-Control-Allow-Headers".to_string(),
             "Content-Type, Authorization".to_string().into_bytes(),
         ),
-    ]).unwrap()
+    ])
+    .unwrap()
 }
 
 #[http_component]
@@ -193,7 +194,7 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
                         match get_initial_token_balance_for_conversation(conversation_id).await {
                             Ok(result) => result,
                             Err(_) => {
-                                eprintln!("Unable to get conversation balance");
+                                eprintln!("Unable to get initial conversation balance");
                                 return server_error(response_out);
                             }
                         }
@@ -364,7 +365,10 @@ async fn handle_request(request: Request, response_out: ResponseOutparam) {
 async fn get_initial_token_balance_for_conversation(
     conversation_id: &str,
 ) -> anyhow::Result<ConversationBalance> {
-    let request = Request::get(format!("https://aitoken.testnet.page/web4/contract/aitoken.testnet/view_js_func?function_name=view_ai_conversation&conversation_id={}", conversation_id)).build();
+    let ft_contract_id = variables::get("ft_contract_id")?;
+
+    let initial_token_balance_request_uri = format!("https://{}.page/web4/contract/{}/view_js_func?function_name=view_ai_conversation&conversation_id={}", ft_contract_id, ft_contract_id, conversation_id);
+    let request = Request::get(initial_token_balance_request_uri).build();
     match http::send::<_, IncomingResponse>(request).await {
         Ok(resp) => {
             let result: Result<ConversationBalance, serde_json::Error> =
@@ -399,9 +403,10 @@ async fn proxy_openai(messages: Value) -> anyhow::Result<IncomingResponse> {
         }
     });
 
+    let openai_completions_endpoint = variables::get("openai_completions_endpoint")?;
     let outgoing_request = Request::builder()
         .method(Method::Post)
-        .uri("https://api.openai.com/v1/chat/completions")
+        .uri(openai_completions_endpoint)
         .header(
             "Authorization",
             format!("Bearer {}", variables::get("openai_api_key").unwrap()),

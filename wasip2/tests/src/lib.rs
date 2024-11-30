@@ -63,6 +63,11 @@ fn set_variables() {
         "5J4fAKqUQj1RT3JD2d58gWiXBNGavrZQPYbNMJwDjHnhF8J8KVC1UHxVu3f7Ng2tFkA9fXcECNW9xuf7iZpcYh1X",
     );
     spin_test_virt::variables::set("openai_api_key", "hello");
+    spin_test_virt::variables::set(
+        "openai_completions_endpoint",
+        "https://api.openai.com/v1/chat/completions",
+    );
+    spin_test_virt::variables::set("ft_contract_id", "aitoken.testnet");
 }
 
 #[spin_test]
