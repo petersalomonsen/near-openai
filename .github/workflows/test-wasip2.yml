@@ -1,4 +1,4 @@
-name: CI
+name: "Wasi preview 2 tests"
 
 on:
   push:
