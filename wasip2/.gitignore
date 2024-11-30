@@ -1,0 +1,5 @@
+target/
+.spin/
+.env
+.DS_Store
+bindings.rs
