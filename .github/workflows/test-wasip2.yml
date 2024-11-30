@@ -15,6 +15,7 @@ jobs:
       - name: Install spin
         run: |
           curl -fsSL https://developer.fermyon.com/downloads/install.sh | bash
+          sudo mv spin /usr/local/bin/
       - name: Build project
         working-directory: wasip2
         run: |
